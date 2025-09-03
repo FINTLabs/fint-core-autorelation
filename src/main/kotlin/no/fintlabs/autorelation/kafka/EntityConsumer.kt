@@ -31,7 +31,7 @@ class EntityConsumer(
             .createContainer(
                 EntityTopicNamePatternParameters.builder()
                     .orgId(FormattedTopicComponentPattern.any())
-                    .domainContext(FormattedTopicComponentPattern.anyOf())
+                    .domainContext(FormattedTopicComponentPattern.anyOf("fint-core"))
                     .resource(FormattedTopicComponentPattern.anyOf(*formattedResourceTopics().toTypedArray()))
                     .build()
             )
