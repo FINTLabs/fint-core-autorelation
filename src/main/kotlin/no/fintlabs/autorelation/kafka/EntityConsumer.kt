@@ -38,8 +38,8 @@ class EntityConsumer(
     }
 
     private fun formattedResourceTopics(): List<String> =
-        fintContext.componentNames().flatMap { component ->
-            fintContext.resourceNames(component).map { "$component-$it" }
+        fintContext.getComponentResourcePairs().flatMap { (component, resources) ->
+            resources.map { resource -> "$component-$resource".lowercase() }
         }
 
     fun consumeRecord(consumerRecord: ConsumerRecord<String, Any>) =

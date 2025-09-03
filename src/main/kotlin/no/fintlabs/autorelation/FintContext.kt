@@ -1,12 +1,17 @@
 package no.fintlabs.autorelation
 
-import org.springframework.stereotype.Component
+import no.fintlabs.metamodel.MetamodelGateway
+import org.springframework.stereotype.Service
 
-@Component
-class FintContext {
+@Service
+class FintContext(
+    private val metamodelGateway: MetamodelGateway
+) {
 
-    fun componentNames(): List<String> = TODO()
-
-    fun resourceNames(component: String): List<String> = TODO()
+    // TODO: Make Component object contain resources?
+    fun getComponentResourcePairs(): List<Pair<String, Set<String>>> =
+        metamodelGateway.getComponents().map {
+            it.name to metamodelGateway.getResourceNames(it.domainName, it.packageName!!)
+        }
 
 }
