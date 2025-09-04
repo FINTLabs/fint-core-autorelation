@@ -1,4 +1,6 @@
 fint:
+  metamodel:
+    format: "-"
   kafka:
     application-id: fint-core-autorelation
 
@@ -6,3 +8,8 @@ spring:
   kafka:
     consumer:
       group-id: ${fint.kafka.application-id}
+
+logging:
+  level:
+    no.fintlabs.kafka: OFF
+    org.apache.kafka: OFF
