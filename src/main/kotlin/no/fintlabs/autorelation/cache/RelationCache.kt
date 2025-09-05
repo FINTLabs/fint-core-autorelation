@@ -1,20 +1,16 @@
 package no.fintlabs.autorelation.cache
 
-import no.fintlabs.autorelation.cache.ResourceRelation
+import no.fintlabs.autorelation.kafka.model.ResourceType
 import org.springframework.stereotype.Repository
 
 @Repository
 class RelationCache(
-    resourceRelationBuilder: ResourceRelationBuilder
+    relationSpecBuilder: RelationSpecBuilder
 ) {
 
-    private val cache: Map<String, List<ResourceRelation>> =
-        resourceRelationBuilder.buildComponentResourcePair()
+    private val cache: Map<ResourceType, List<RelationSpec>> =
+        relationSpecBuilder.buildResourceTypeToRelationSpecs()
 
-    fun keyExists(componentResource: String): Boolean =
-        cache.containsKey(componentResource)
-
-    fun getResourceRelations(componentResource: String) =
-        cache.getOrDefault(componentResource, emptyList())
+    fun getRelationSpecs(resourceType: ResourceType): List<RelationSpec>? = cache[resourceType]
 
 }

@@ -2,5 +2,5 @@ package no.fintlabs.autorelation.kafka.model
 
 data class RelationRef(
     val name: String,
-    val id: ResourceId
+    val ids: List<ResourceId>
 )
