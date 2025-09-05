@@ -2,7 +2,6 @@ package no.fintlabs.autorelation.cache
 
 import no.fint.model.FintMultiplicity
 import no.fint.model.FintRelation
-import no.fintlabs.autorelation.cache.ResourceRelation
 import no.fintlabs.metamodel.MetamodelService
 import no.fintlabs.metamodel.model.Resource
 import org.springframework.stereotype.Component
@@ -59,7 +58,11 @@ class ResourceRelationBuilder(
         relationResource.relations.firstOrNull { it.packageName == resourcePackageName }
 
     private fun createResourceRelation(relation: FintRelation) =
-        ResourceRelation(relation.name, getComponentResource(relation.packageName))
+        ResourceRelation(
+            relation = relation.name,
+            multiplicity = relation.multiplicity,
+            componentResource = getComponentResource(relation.packageName)
+        )
 
     private fun getResourceName(packageName: String): String =
         packageName.split(".").last()
