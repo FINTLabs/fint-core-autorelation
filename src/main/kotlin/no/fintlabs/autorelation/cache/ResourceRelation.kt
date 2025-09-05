@@ -1,4 +1,4 @@
-package no.fintlabs.autorelation
+package no.fintlabs.autorelation.cache
 
 class ResourceRelation(
     val relation: String,

@@ -1,5 +1,6 @@
-package no.fintlabs.autorelation
+package no.fintlabs.autorelation.cache
 
+import no.fintlabs.autorelation.cache.ResourceRelation
 import org.springframework.stereotype.Repository
 
 @Repository

@@ -1,7 +1,8 @@
-package no.fintlabs.autorelation
+package no.fintlabs.autorelation.cache
 
 import no.fint.model.FintMultiplicity
 import no.fint.model.FintRelation
+import no.fintlabs.autorelation.cache.ResourceRelation
 import no.fintlabs.metamodel.MetamodelService
 import no.fintlabs.metamodel.model.Resource
 import org.springframework.stereotype.Component
@@ -11,7 +12,7 @@ class ResourceRelationBuilder(
     private val metamodelService: MetamodelService
 ) {
 
-    // TODO: Move some of the Fint logic into metamodel or own Class?
+    // TODO: Move some of the Fint logic into metamodel?
 
     fun buildComponentResourcePair(): Map<String, List<ResourceRelation>> =
         metamodelService.getComponents()

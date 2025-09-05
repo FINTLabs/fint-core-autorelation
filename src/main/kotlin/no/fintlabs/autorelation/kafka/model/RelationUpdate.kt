@@ -1,7 +1,4 @@
-package no.fintlabs.autorelation.kafka
-
-import no.fintlabs.autorelation.model.RelationRef
-import no.fintlabs.autorelation.model.ResourceRef
+package no.fintlabs.autorelation.kafka.model
 
 data class RelationUpdate(
     val orgId: String,

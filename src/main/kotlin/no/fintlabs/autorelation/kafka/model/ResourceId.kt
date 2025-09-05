@@ -1,4 +1,4 @@
-package no.fintlabs.autorelation.model
+package no.fintlabs.autorelation.kafka.model
 
 data class ResourceId(
     val field: String,
