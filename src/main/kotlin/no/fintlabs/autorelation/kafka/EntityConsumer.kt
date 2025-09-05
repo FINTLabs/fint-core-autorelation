@@ -1,6 +1,7 @@
 package no.fintlabs.autorelation.kafka
 
 import no.fintlabs.autorelation.AutoRelationService
+import no.fintlabs.autorelation.kafka.model.ResourceType
 import no.fintlabs.kafka.common.topic.pattern.FormattedTopicComponentPattern
 import no.fintlabs.kafka.entity.EntityConsumerFactoryService
 import no.fintlabs.kafka.entity.topic.EntityTopicNamePatternParameters
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component
 @Component
 class EntityConsumer(
     private val metamodelService: MetamodelService,
-    private val autoReflectionService: AutoRelationService
+    private val autoRelation: AutoRelationService
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -43,8 +44,15 @@ class EntityConsumer(
         }
 
     fun consumeRecord(consumerRecord: ConsumerRecord<String, Any>) =
-        consumerRecord.topic().split("-").lastOrNull()
-            ?.let { resourceName -> autoReflectionService.processEntity(consumerRecord.value(), resourceName) }
-            ?: logger.error("Couldn't get resource name from entity topic")
+        consumerRecord.topic().split(".").let { topicSplit ->
+            autoRelation.processEntity(
+                topicSplit.first(),
+                ResourceType.parse(topicSplit.last()),
+                consumerRecord.value()
+            )
+        }
+
+    private fun getOrgIdAndResourceTypeFromTopic(topic: String): Pair<String, ResourceType>? =
+        topic.substringBefore(".") to ResourceType.parse(topic.substringAfterLast("."))
 
 }

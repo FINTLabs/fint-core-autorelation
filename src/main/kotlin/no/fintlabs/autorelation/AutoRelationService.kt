@@ -1,30 +1,64 @@
 package no.fintlabs.autorelation
 
-import jakarta.annotation.PostConstruct
-import no.fint.model.FintMultiplicity
+import no.fint.model.resource.FintLinks
+import no.fint.model.resource.FintResource
+import no.fint.model.resource.Link
+import no.fintlabs.autorelation.cache.RelationCache
+import no.fintlabs.autorelation.cache.RelationSpec
+import no.fintlabs.autorelation.kafka.model.RelationUpdate
+import no.fintlabs.autorelation.kafka.model.ResourceId
+import no.fintlabs.autorelation.kafka.model.ResourceType
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class AutoRelationService {
+class AutoRelationService(
+    private val relationCache: RelationCache,
+    private val resourceMapper: ResourceMapperService
+) {
 
-    fun processEntity(resource: Any, resourceName: String): Unit = TODO()
+    private val logger = LoggerFactory.getLogger(javaClass)
 
-    @PostConstruct
-    fun resourceShouldBeProcessed() {
-        val component = "utdanning.vurdering"
-        val resource = ""
+    fun processEntity(orgId: String, resourceType: ResourceType, resourceObject: Any) =
+        relationCache.getRelationSpecs(resourceType)?.let { relationSpecs ->
+            resourceMapper.mapResource(resourceType, resourceObject)
+                ?.let { parseRelationSpecs(orgId, relationSpecs, it) }
+        }
 
-        // If relation thats added has resource that's going to be updated, proceed
-        // Map the object to an actual Resource
-        // Map the idfields to an object
+    fun parseRelationSpecs(orgId: String, relationSpecs: List<RelationSpec>, resourceObject: FintResource) =
+        relationSpecs.forEach { relationSpec ->
+            getRelationLink(resourceObject, relationSpec.resourceRelation.name)
+                ?.let(::createResourceIdFromLink)
+                ?.let { resourceId ->
+                    buildRelationUpdate(orgId, relationSpec, resourceObject, resourceId)
+                }
+        }
 
-        // If resource has NONE_TO_MANY or ONE_TO_MANY relation, we will update it
-        // add resource that should be updated to Map<relationThatsAdded, List<FutureUpdatedResources>>
+    private fun buildRelationUpdate(
+        orgId: String,
+        relationSpec: RelationSpec,
+        resourceObject: FintResource,
+        resourceId: ResourceId
+    ): RelationUpdate? =
+        createRelationIds(resourceObject)
+            ?.let { relationIds -> RelationUpdate.from(orgId, relationSpec, resourceId, relationIds) }
 
-//        FintMultiplicity.ONE_TO_ONE,
-//        FintMultiplicity.ONE_TO_MANY,
-//        FintMultiplicity.NONE_TO_ONE,
-//        FintMultiplicity.NONE_TO_MANY;
-    }
+    // TODO: Log required relations missing?
+    private fun getRelationLink(fintLinks: FintLinks, relationName: String): Link? =
+        fintLinks.links?.get(relationName)?.firstOrNull()
+
+    private fun createRelationIds(resourceObject: FintResource): List<ResourceId>? =
+        resourceObject.identifikators
+            .filterValues { it != null }
+            .map { (idField, identifikator) ->
+                ResourceId(idField, identifikator!!.identifikatorverdi)
+            }
+            .takeIf { it.isNotEmpty() }
+
+    private fun createResourceIdFromLink(link: Link) =
+        getIdPair(link.href).let { (idField, idValue) -> ResourceId(idField, idValue) }
+
+    private fun getIdPair(href: String) =
+        href.split("/").takeLast(2)
 
 }
