@@ -1,6 +1,8 @@
 package no.fintlabs.autorelation
 
-data class ResourceRelation(
+class ResourceRelation(
     val relation: String,
-    val componentResource: String
-)
+    componentResource: String
+) {
+    val componentResource: String = componentResource.lowercase()
+}
