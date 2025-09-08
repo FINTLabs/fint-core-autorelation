@@ -29,6 +29,7 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
     implementation("no.fintlabs:fint-kafka:3.0.0-rc-1")
     implementation("no.fintlabs:fint-core-consumer-metamodel:2.0.0-rc-3")
+    implementation("no.fintlabs:fint-core-autorelation-model:1.0.0")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

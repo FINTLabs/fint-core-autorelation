@@ -6,6 +6,7 @@ import no.fint.model.resource.Link
 import no.fintlabs.autorelation.cache.RelationCache
 import no.fintlabs.autorelation.cache.RelationSpec
 import no.fintlabs.autorelation.kafka.RelationUpdateEventProducer
+import no.fintlabs.autorelation.kafka.RelationUpdateMapper
 import no.fintlabs.autorelation.kafka.model.RelationOperation
 import no.fintlabs.autorelation.kafka.model.RelationUpdate
 import no.fintlabs.autorelation.kafka.model.ResourceId
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class AutoRelationService(
+    private val mapper: RelationUpdateMapper,
     private val relationCache: RelationCache,
     private val resourceMapper: ResourceMapperService,
     private val eventPublisher: RelationUpdateEventProducer
@@ -46,7 +48,7 @@ class AutoRelationService(
     ): RelationUpdate? =
         createRelationIds(resourceObject)
             ?.let { relationIds ->
-                RelationUpdate.from(orgId, RelationOperation.ADD, relationSpec, resourceId, relationIds)
+                mapper.map(orgId, RelationOperation.ADD, relationSpec, resourceId, relationIds)
             }
 
     // TODO: Log required relations missing?
