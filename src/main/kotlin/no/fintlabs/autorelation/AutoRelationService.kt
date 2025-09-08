@@ -5,6 +5,8 @@ import no.fint.model.resource.FintResource
 import no.fint.model.resource.Link
 import no.fintlabs.autorelation.cache.RelationCache
 import no.fintlabs.autorelation.cache.RelationSpec
+import no.fintlabs.autorelation.kafka.RelationUpdateEventProducer
+import no.fintlabs.autorelation.kafka.model.RelationOperation
 import no.fintlabs.autorelation.kafka.model.RelationUpdate
 import no.fintlabs.autorelation.kafka.model.ResourceId
 import no.fintlabs.autorelation.kafka.model.ResourceType
@@ -14,7 +16,8 @@ import org.springframework.stereotype.Service
 @Service
 class AutoRelationService(
     private val relationCache: RelationCache,
-    private val resourceMapper: ResourceMapperService
+    private val resourceMapper: ResourceMapperService,
+    private val eventPublisher: RelationUpdateEventProducer
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -31,6 +34,7 @@ class AutoRelationService(
                 ?.let(::createResourceIdFromLink)
                 ?.let { resourceId ->
                     buildRelationUpdate(orgId, relationSpec, resourceObject, resourceId)
+                        ?.let { eventPublisher.publishRelationUpdate(it) }
                 }
         }
 
@@ -41,7 +45,9 @@ class AutoRelationService(
         resourceId: ResourceId
     ): RelationUpdate? =
         createRelationIds(resourceObject)
-            ?.let { relationIds -> RelationUpdate.from(orgId, relationSpec, resourceId, relationIds) }
+            ?.let { relationIds ->
+                RelationUpdate.from(orgId, RelationOperation.ADD, relationSpec, resourceId, relationIds)
+            }
 
     // TODO: Log required relations missing?
     private fun getRelationLink(fintLinks: FintLinks, relationName: String): Link? =
