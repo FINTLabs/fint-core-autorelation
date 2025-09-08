@@ -1,6 +1,8 @@
 package no.fintlabs.autorelation.kafka
 
 import no.fintlabs.autorelation.AutoRelationService
+import no.fintlabs.autorelation.kafka.model.RelationOperation
+import no.fintlabs.autorelation.kafka.model.RelationRequest
 import no.fintlabs.autorelation.kafka.model.ResourceType
 import no.fintlabs.kafka.common.topic.pattern.FormattedTopicComponentPattern
 import no.fintlabs.kafka.entity.EntityConsumerFactoryService
@@ -44,13 +46,23 @@ class EntityConsumer(
         }
 
     fun consumeRecord(consumerRecord: ConsumerRecord<String, Any>) =
-        consumerRecord.topic().split(".").let { topicSplit ->
-            autoRelation.processEntity(
-                topicSplit.first(),
-                ResourceType.parse(topicSplit.last()),
-                consumerRecord.value()
-            )
-        }
+        createRelationRequest(consumerRecord.topic(), consumerRecord.value())
+            .let { autoRelation.processRequest(it) }
+
+    private fun createRelationRequest(topic: String, resource: Any) =
+        RelationRequest(
+            orgId = getOrgId(topic),
+            type = getResourceType(topic),
+            resource = resource,
+            operation = RelationOperation.ADD
+        )
+
+    private fun getOrgId(topic: String) = topic.substringBefore(".")
+
+    private fun getResourceType(topic: String) =
+        topic.substringAfterLast(".")
+            .split(".")
+            .let { (domain, pkg, resource) -> ResourceType(domain, pkg, resource) }
 
     private fun getOrgIdAndResourceTypeFromTopic(topic: String): Pair<String, ResourceType>? =
         topic.substringBefore(".") to ResourceType.parse(topic.substringAfterLast("."))

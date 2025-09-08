@@ -8,10 +8,9 @@ import no.fintlabs.autorelation.cache.RelationSpec
 import no.fintlabs.autorelation.kafka.RelationUpdateEventProducer
 import no.fintlabs.autorelation.kafka.RelationUpdateMapper
 import no.fintlabs.autorelation.kafka.model.RelationOperation
+import no.fintlabs.autorelation.kafka.model.RelationRequest
 import no.fintlabs.autorelation.kafka.model.RelationUpdate
 import no.fintlabs.autorelation.kafka.model.ResourceId
-import no.fintlabs.autorelation.kafka.model.ResourceType
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
@@ -22,15 +21,13 @@ class AutoRelationService(
     private val eventPublisher: RelationUpdateEventProducer
 ) {
 
-    private val logger = LoggerFactory.getLogger(javaClass)
-
-    fun processEntity(orgId: String, resourceType: ResourceType, resourceObject: Any) =
-        relationCache.getRelationSpecs(resourceType)?.let { relationSpecs ->
-            resourceMapper.mapResource(resourceType, resourceObject)
-                ?.let { parseRelationSpecs(orgId, relationSpecs, it) }
+    fun processRequest(relationRequest: RelationRequest) =
+        relationCache.getRelationSpecs(relationRequest.type)?.let { relationSpecs ->
+            resourceMapper.mapResource(relationRequest.type, relationRequest.resource)
+                ?.let { parseRelationSpecs(relationRequest.orgId, relationSpecs, it) }
         }
 
-    fun parseRelationSpecs(orgId: String, relationSpecs: List<RelationSpec>, resourceObject: FintResource) =
+    private fun parseRelationSpecs(orgId: String, relationSpecs: List<RelationSpec>, resourceObject: FintResource) =
         relationSpecs.forEach { relationSpec ->
             getRelationLink(resourceObject, relationSpec.resourceRelation.name)
                 ?.let(::createResourceIdFromLink)
