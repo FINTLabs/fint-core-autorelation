@@ -46,8 +46,11 @@ class EntityConsumer(
         }
 
     fun consumeRecord(consumerRecord: ConsumerRecord<String, Any>) =
-        createRelationRequest(consumerRecord.topic(), consumerRecord.value())
-            .let { autoRelation.processRequest(it) }
+        consumerRecord.takeIf { it.value() != null }?.let {
+            createRelationRequest(it.topic(), it.value())
+                .let { request -> autoRelation.processRequest(request) }
+        }
+
 
     private fun createRelationRequest(topic: String, resource: Any) =
         RelationRequest(
