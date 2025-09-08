@@ -1,5 +1,6 @@
 fint:
   kafka:
+    default-replicas: 1
     application-id: fint-core-autorelation
 
 spring:
