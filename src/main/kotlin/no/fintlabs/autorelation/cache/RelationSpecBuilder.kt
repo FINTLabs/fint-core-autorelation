@@ -4,10 +4,11 @@ import no.fint.model.FintMultiplicity
 import no.fint.model.FintRelation
 import no.fintlabs.autorelation.kafka.model.ResourceType
 import no.fintlabs.metamodel.MetamodelService
+import no.fintlabs.metamodel.model.Component
 import no.fintlabs.metamodel.model.Resource
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 
-@Component
+@Service
 class RelationSpecBuilder(
     private val metamodelService: MetamodelService
 ) {
@@ -20,6 +21,7 @@ class RelationSpecBuilder(
                 component.resources.flatMap { resource ->
                     resource.relations
                         .filter { isOneOrNoneToMany(it.multiplicity) }
+                        .filter { belongsToSameDomain(component, it) }
                         .mapNotNull { relation ->
                             buildResourceTypeToRelationSpecs(
                                 component = component.name,
@@ -34,6 +36,9 @@ class RelationSpecBuilder(
                 valueTransform = { (_, resourceRelations) -> resourceRelations }
             )
 
+    private fun belongsToSameDomain(component: Component, relation: FintRelation): Boolean =
+        relation.packageName.startsWith("no.fint.model.${component.domainName}")
+
     private fun buildResourceTypeToRelationSpecs(
         component: String,
         originalRelation: FintRelation,
@@ -44,8 +49,8 @@ class RelationSpecBuilder(
             .let { resourceType ->
                 metamodelService.getResource(resourceType.domain, resourceType.pkg, resourceType.resource)
                     ?.let { findFirstBackReference(it, resourcePackage) }
-                    ?.let { resourceRelation ->
-                        resourceType to createResourceSpec(resourceRelation, originalRelation)
+                    ?.let { relationResource ->
+                        resourceType to createResourceSpec(relationResource, originalRelation)
                     }
             }
 
@@ -68,6 +73,7 @@ class RelationSpecBuilder(
 
     private fun findFirstBackReference(relationResource: Resource, resourcePackageName: String) =
         relationResource.relations.firstOrNull { it.packageName == resourcePackageName }
+            .takeIf { it?.multiplicity == FintMultiplicity.ONE_TO_ONE || it?.multiplicity == FintMultiplicity.NONE_TO_ONE }
 
     private fun getResourceName(packageName: String): String =
         packageName.split(".").last()
