@@ -7,7 +7,6 @@ import no.fintlabs.autorelation.cache.RelationCache
 import no.fintlabs.autorelation.cache.RelationSpec
 import no.fintlabs.autorelation.kafka.RelationUpdateEventProducer
 import no.fintlabs.autorelation.kafka.RelationUpdateMapper
-import no.fintlabs.autorelation.kafka.model.RelationOperation
 import no.fintlabs.autorelation.kafka.model.RelationRequest
 import no.fintlabs.autorelation.kafka.model.RelationUpdate
 import no.fintlabs.autorelation.kafka.model.ResourceId
@@ -24,29 +23,30 @@ class AutoRelationService(
     fun processRequest(relationRequest: RelationRequest) =
         relationCache.getRelationSpecs(relationRequest.type)?.let { relationSpecs ->
             resourceMapper.mapResource(relationRequest.type, relationRequest.resource)
-                ?.let { parseRelationSpecs(relationRequest.orgId, relationSpecs, it) }
+                ?.let { parseRelationSpecs(relationRequest, relationSpecs, it) }
         }
 
-    private fun parseRelationSpecs(orgId: String, relationSpecs: List<RelationSpec>, resourceObject: FintResource) =
+    private fun parseRelationSpecs(
+        request: RelationRequest,
+        relationSpecs: List<RelationSpec>,
+        resourceObject: FintResource
+    ) =
         relationSpecs.forEach { relationSpec ->
             getRelationLink(resourceObject, relationSpec.resourceRelation.name)
                 ?.let(::createResourceIdFromLink)
-                ?.let { resourceId ->
-                    buildRelationUpdate(orgId, relationSpec, resourceObject, resourceId)
-                        ?.let { eventPublisher.publishRelationUpdate(it) }
-                }
+                ?.let { resourceId -> buildRelationUpdate(request, relationSpec, resourceObject, resourceId) }
+                ?.let { relationUpdate -> eventPublisher.publishRelationUpdate(relationUpdate) }
         }
 
     private fun buildRelationUpdate(
-        orgId: String,
+        request: RelationRequest,
         relationSpec: RelationSpec,
         resourceObject: FintResource,
         resourceId: ResourceId
     ): RelationUpdate? =
-        createRelationIds(resourceObject)
-            ?.let { relationIds ->
-                mapper.map(orgId, RelationOperation.ADD, relationSpec, resourceId, relationIds)
-            }
+        createRelationIds(resourceObject)?.let { relationIds ->
+            mapper.map(request.orgId, request.operation, relationSpec, resourceId, relationIds)
+        }
 
     // TODO: Log required relations missing?
     private fun getRelationLink(fintLinks: FintLinks, relationName: String): Link? =
