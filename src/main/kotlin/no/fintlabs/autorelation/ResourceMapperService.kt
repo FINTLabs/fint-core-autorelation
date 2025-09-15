@@ -2,7 +2,7 @@ package no.fintlabs.autorelation
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import no.fint.model.resource.FintResource
-import no.fintlabs.autorelation.kafka.model.ResourceType
+import no.fintlabs.autorelation.model.ResourceType
 import no.fintlabs.metamodel.MetamodelService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -23,6 +23,6 @@ class ResourceMapperService(
 
     private fun mapResource(resourceObject: Any, resourceType: Class<out FintResource>): Result<FintResource> =
         runCatching { objectMapper.convertValue(resourceObject, resourceType) }
-            .onFailure { logger.error("AAA: ${it.message}") }
+            .onFailure { logger.error(it.message) }
 
 }

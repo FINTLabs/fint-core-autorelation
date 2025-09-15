@@ -1,6 +1,6 @@
 package no.fintlabs.autorelation.kafka
 
-import no.fintlabs.autorelation.kafka.model.RelationUpdate
+import no.fintlabs.autorelation.model.RelationUpdate
 import no.fintlabs.kafka.event.EventProducerFactory
 import no.fintlabs.kafka.event.EventProducerRecord
 import no.fintlabs.kafka.event.topic.EventTopicNameParameters
