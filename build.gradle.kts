@@ -8,8 +8,7 @@ plugins {
 }
 
 group = "no.fintlabs"
-version = "0.0.1-SNAPSHOT"
-description = "fint-core-autorelation"
+version = project.findProperty("version") ?: "0.0.1-SNAPSHOT"
 
 java {
     toolchain {
@@ -23,13 +22,22 @@ repositories {
     maven("https://repo.fintlabs.no/releases")
 }
 
+val fintVersion = "3.19.0"
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
 
+    implementation("no.fint:fint-utdanning-resource-model-java:$fintVersion")
+    implementation("no.fint:fint-administrasjon-resource-model-java:$fintVersion")
+    implementation("no.fint:fint-personvern-resource-model-java:$fintVersion")
+    implementation("no.fint:fint-okonomi-resource-model-java:$fintVersion")
+    implementation("no.fint:fint-ressurs-resource-model-java:$fintVersion")
+    implementation("no.fint:fint-arkiv-resource-model-java:$fintVersion")
+
     implementation("org.springframework.kafka:spring-kafka")
     implementation("no.fintlabs:fint-kafka:3.0.0-rc-1")
-    implementation("no.fintlabs:fint-core-consumer-metamodel:2.0.0-rc-3")
-    implementation("no.fintlabs:fint-core-autorelation-model:1.3.0")
+    implementation("no.fintlabs:fint-core-consumer-metamodel:2.0.0-rc-4")
+    implementation("no.fintlabs:fint-core-autorelation-lib:2.0.0-rc-1")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
