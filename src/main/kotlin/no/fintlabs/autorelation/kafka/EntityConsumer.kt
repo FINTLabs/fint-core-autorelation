@@ -1,26 +1,26 @@
 package no.fintlabs.autorelation.kafka
 
 import no.fintlabs.autorelation.AutoRelationService
-import no.fintlabs.autorelation.kafka.model.RelationOperation
-import no.fintlabs.autorelation.kafka.model.RelationRequest
-import no.fintlabs.autorelation.kafka.model.ResourceType
+import no.fintlabs.autorelation.model.RelationOperation
+import no.fintlabs.autorelation.model.RelationRequest
+import no.fintlabs.autorelation.model.ResourceType
 import no.fintlabs.kafka.common.topic.pattern.FormattedTopicComponentPattern
 import no.fintlabs.kafka.entity.EntityConsumerFactoryService
 import no.fintlabs.kafka.entity.topic.EntityTopicNamePatternParameters
 import no.fintlabs.metamodel.MetamodelService
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.slf4j.LoggerFactory
+import org.apache.kafka.common.header.Headers
 import org.springframework.context.annotation.Bean
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer
 import org.springframework.stereotype.Component
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 @Component
 class EntityConsumer(
     private val metamodelService: MetamodelService,
     private val autoRelation: AutoRelationService
 ) {
-
-    private val logger = LoggerFactory.getLogger(javaClass)
 
     @Bean
     fun concurrentMessageListenerContainer(
@@ -46,28 +46,36 @@ class EntityConsumer(
         }
 
     fun consumeRecord(consumerRecord: ConsumerRecord<String, Any>) =
-        consumerRecord.takeIf { it.value() != null }?.let {
-            createRelationRequest(it.topic(), it.value())
-                .let { request -> autoRelation.processRequest(request) }
-        }
+        consumerRecord.takeIf { shouldBeProcessed(it) }
+            ?.let { createRelationRequest(it) }
+            ?.let { autoRelation.processRequest(it) }
 
+    private fun shouldBeProcessed(record: ConsumerRecord<String, Any>) =
+        record.value() != null && record.headers().lastHeader("consumer") == null
 
-    private fun createRelationRequest(topic: String, resource: Any) =
+    private fun createRelationRequest(consumerRecord: ConsumerRecord<String, Any>) =
         RelationRequest(
-            orgId = getOrgId(topic),
-            type = getResourceType(topic),
-            resource = resource,
-            operation = RelationOperation.ADD
+            orgId = getOrgId(consumerRecord.topic()),
+            type = getResourceType(consumerRecord.topic()),
+            resource = consumerRecord.value(),
+            operation = RelationOperation.ADD,
+            entityRetentionTime = getEntityRetentionTime(consumerRecord.headers())
         )
+
+    private fun getEntityRetentionTime(header: Headers): Long? =
+        header.lastHeader("entity-retention-time")
+            ?.value()?.toLong()
+
+    private fun ByteArray.toLong(): Long? =
+        this.takeIf { it.size == Long.SIZE_BYTES }
+            ?.let { ByteBuffer.wrap(it) }
+            ?.order(ByteOrder.BIG_ENDIAN)?.long
 
     private fun getOrgId(topic: String) = topic.substringBefore(".")
 
     private fun getResourceType(topic: String) =
         topic.substringAfterLast(".")
-            .split(".")
+            .split("-")
             .let { (domain, pkg, resource) -> ResourceType(domain, pkg, resource) }
-
-    private fun getOrgIdAndResourceTypeFromTopic(topic: String): Pair<String, ResourceType>? =
-        topic.substringBefore(".") to ResourceType.parse(topic.substringAfterLast("."))
 
 }
