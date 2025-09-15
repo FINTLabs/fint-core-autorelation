@@ -1,22 +1,20 @@
 package no.fintlabs.autorelation.kafka
 
-import no.fintlabs.autorelation.cache.RelationSpec
-import no.fintlabs.autorelation.kafka.model.*
+import no.fintlabs.autorelation.model.*
 import org.springframework.stereotype.Component
 
 @Component
 class RelationUpdateMapper {
 
     fun map(
-        orgId: String,
-        operation: RelationOperation,
+        request: RelationRequest,
         relationSpec: RelationSpec,
         resourceId: ResourceId,
         relationIds: List<ResourceId>
     ): RelationUpdate =
         RelationUpdate(
-            orgId = orgId,
-            operation = operation,
+            orgId = request.orgId,
+            operation = request.operation,
             domainName = relationSpec.resourceType.domain,
             packageName = relationSpec.resourceType.pkg,
             resource = ResourceRef(
@@ -26,7 +24,8 @@ class RelationUpdateMapper {
             relation = RelationRef(
                 name = relationSpec.inversedRelation.name,
                 ids = relationIds
-            )
+            ),
+            entityRetentionTime = request.entityRetentionTime
         )
 
 }
