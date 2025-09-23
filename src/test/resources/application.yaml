@@ -1,0 +1,14 @@
+fint:
+  kafka:
+    default-replicas: 1
+    application-id: fint-core-autorelation
+
+spring:
+  kafka:
+    consumer:
+      group-id: ${fint.kafka.application-id}
+      auto-offset-reset: earliest
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
