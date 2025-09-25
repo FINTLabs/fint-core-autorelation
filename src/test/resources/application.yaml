@@ -12,3 +12,7 @@ spring:
     producer:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
+logging:
+  level:
+    org.apache.kafka: OFF
+    no.fintlabs.kafka: OFF
