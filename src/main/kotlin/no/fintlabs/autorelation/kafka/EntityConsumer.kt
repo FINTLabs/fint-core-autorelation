@@ -1,6 +1,7 @@
 package no.fintlabs.autorelation.kafka
 
 import no.fintlabs.autorelation.AutoRelationService
+import no.fintlabs.autorelation.kafka.mapper.RelationRequestMapper
 import no.fintlabs.autorelation.model.RelationOperation
 import no.fintlabs.autorelation.model.RelationRequest
 import no.fintlabs.autorelation.model.ResourceType

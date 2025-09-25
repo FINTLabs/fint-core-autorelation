@@ -5,7 +5,7 @@ import no.fint.model.resource.FintResource
 import no.fint.model.resource.Link
 import no.fintlabs.autorelation.cache.RelationCache
 import no.fintlabs.autorelation.kafka.RelationUpdateEventProducer
-import no.fintlabs.autorelation.kafka.RelationUpdateMapper
+import no.fintlabs.autorelation.kafka.mapper.RelationUpdateMapper
 import no.fintlabs.autorelation.model.RelationRequest
 import no.fintlabs.autorelation.model.RelationSpec
 import no.fintlabs.autorelation.model.RelationUpdate
