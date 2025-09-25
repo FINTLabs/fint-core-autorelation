@@ -1,6 +1,5 @@
-package no.fintlabs.autorelation.kafka
+package no.fintlabs.autorelation.kafka.mapper
 
-import no.fintlabs.autorelation.kafka.mapper.RelationRequestMapper
 import no.fintlabs.autorelation.model.RelationOperation
 import no.fintlabs.autorelation.model.ResourceType
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -12,7 +11,8 @@ import org.junit.jupiter.api.assertThrows
 import java.lang.Exception
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.util.*
+import java.util.Optional
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
@@ -57,7 +57,11 @@ class RelationRequestMapperTest {
 
         val req = mapper.createRelationRequest(record(topic, value, headers))
 
-        assertEquals(retentionSeconds, req.entityRetentionTime, "entityRetentionTime should be decoded from big-endian 8 bytes")
+        assertEquals(
+            retentionSeconds,
+            req.entityRetentionTime,
+            "entityRetentionTime should be decoded from big-endian 8 bytes"
+        )
     }
 
     @Test
