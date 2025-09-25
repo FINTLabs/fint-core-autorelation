@@ -1,4 +1,4 @@
-package no.fintlabs.autorelation.kafka
+package no.fintlabs.autorelation.kafka.helper
 
 import no.fintlabs.kafka.entity.EntityProducerFactory
 import no.fintlabs.kafka.entity.EntityProducerRecord

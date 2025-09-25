@@ -1,7 +1,7 @@
 package no.fintlabs.autorelation
 
-import no.fintlabs.autorelation.kafka.EntityProducer
-import no.fintlabs.autorelation.kafka.KafkaUtils
+import no.fintlabs.autorelation.kafka.helper.EntityProducer
+import no.fintlabs.autorelation.kafka.helper.KafkaAdminTools
 import no.fintlabs.autorelation.kafka.RelationUpdateEventProducer
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.BeforeEach
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 @EmbeddedKafka(partitions = 1, controlledShutdown = true, count = 2)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class AutoRelationServiceTest @Autowired constructor(
-    private val kafkaUtils: KafkaUtils,
+    private val kafkaAdminTools: KafkaAdminTools,
     private val entityProducer: EntityProducer
 ) {
 
@@ -36,7 +36,7 @@ class AutoRelationServiceTest @Autowired constructor(
 
     @BeforeEach
     fun resetSetup() {
-        kafkaUtils.resetTopics("fintlabs-no.fint-core.entity.utdanning-vurdering-$topicResource")
+        kafkaAdminTools.resetTopics("fintlabs-no.fint-core.entity.utdanning-vurdering-$topicResource")
         reset(autoRelation, relationUpdateProducer)
     }
 
