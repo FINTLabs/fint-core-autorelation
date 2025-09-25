@@ -16,3 +16,4 @@ logging:
   level:
     org.apache.kafka: OFF
     no.fintlabs.kafka: OFF
+    kafka.server: OFF
