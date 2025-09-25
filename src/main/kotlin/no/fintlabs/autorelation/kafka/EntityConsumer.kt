@@ -19,7 +19,8 @@ import java.nio.ByteOrder
 @Component
 class EntityConsumer(
     private val metamodelService: MetamodelService,
-    private val autoRelation: AutoRelationService
+    private val autoRelation: AutoRelationService,
+    private val relationRequestMapper: RelationRequestMapper
 ) {
 
     @Bean
@@ -40,42 +41,17 @@ class EntityConsumer(
             )
     }
 
-    private fun formattedResourceTopics(): List<String> =
-        metamodelService.getComponents().flatMap { component ->
-            component.resources.map { "${component.domainName}-${component.packageName}-${it.name}".lowercase() }
-        }
-
     fun consumeRecord(consumerRecord: ConsumerRecord<String, Any>) =
         consumerRecord.takeIf { shouldBeProcessed(it.value(), it.headers()) }
-            ?.let { createRelationRequest(it) }
+            ?.let { relationRequestMapper.createRelationRequest(it) }
             ?.let { autoRelation.processRequest(it) }
 
     fun shouldBeProcessed(value: Any?, headers: Headers) =
         value != null && headers.lastHeader("consumer") == null
 
-    private fun createRelationRequest(consumerRecord: ConsumerRecord<String, Any>) =
-        RelationRequest(
-            orgId = getOrgId(consumerRecord.topic()),
-            type = getResourceType(consumerRecord.topic()),
-            resource = consumerRecord.value(),
-            operation = RelationOperation.ADD,
-            entityRetentionTime = getEntityRetentionTime(consumerRecord.headers())
-        )
-
-    private fun getEntityRetentionTime(header: Headers): Long? =
-        header.lastHeader("entity-retention-time")
-            ?.value()?.toLong()
-
-    private fun ByteArray.toLong(): Long? =
-        this.takeIf { it.size == Long.SIZE_BYTES }
-            ?.let { ByteBuffer.wrap(it) }
-            ?.order(ByteOrder.BIG_ENDIAN)?.long
-
-    private fun getOrgId(topic: String) = topic.substringBefore(".")
-
-    private fun getResourceType(topic: String) =
-        topic.substringAfterLast(".")
-            .split("-")
-            .let { (domain, pkg, resource) -> ResourceType(domain, pkg, resource) }
+    private fun formattedResourceTopics(): List<String> =
+        metamodelService.getComponents().flatMap { component ->
+            component.resources.map { "${component.domainName}-${component.packageName}-${it.name}".lowercase() }
+        }
 
 }
