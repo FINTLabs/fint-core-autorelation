@@ -1,4 +1,4 @@
-package no.fintlabs.autorelation.utils
+package no.fintlabs.autorelation.kafka
 
 import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.NewTopic
