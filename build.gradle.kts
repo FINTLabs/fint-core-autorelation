@@ -1,5 +1,3 @@
-import org.gradle.kotlin.dsl.implementation
-
 plugins {
     kotlin("jvm") version "1.9.25"
     kotlin("plugin.spring") version "1.9.25"
@@ -23,6 +21,7 @@ repositories {
 }
 
 val fintVersion = "3.19.0"
+val fintTestVersion = "3.19.0"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -42,7 +41,16 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
+
+    testImplementation("no.fint:fint-utdanning-resource-model-java:${fintTestVersion}")
+    testImplementation("no.fint:fint-administrasjon-resource-model-java:${fintTestVersion}")
+    testImplementation("no.fint:fint-personvern-resource-model-java:${fintTestVersion}")
+    testImplementation("no.fint:fint-okonomi-resource-model-java:${fintTestVersion}")
+    testImplementation("no.fint:fint-ressurs-resource-model-java:${fintTestVersion}")
+    testImplementation("no.fint:fint-arkiv-resource-model-java:${fintTestVersion}")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("org.mockito:mockito-core")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation("org.awaitility:awaitility:4.2.0")
@@ -57,6 +65,67 @@ kotlin {
     }
 }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
+
+sourceSets {
+    val main by getting
+    val resourceDir = "src/test/resources"
+
+    val unit by creating {
+        java.srcDir("src/test/unit/kotlin")
+        resources.srcDir(resourceDir)
+        compileClasspath += main.output + configurations.testCompileClasspath.get()
+        runtimeClasspath += output + compileClasspath
+    }
+
+    val integration by creating {
+        java.srcDir("src/test/integration/kotlin")
+        resources.srcDir(resourceDir)
+        compileClasspath += main.output + configurations.testCompileClasspath.get()
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    val testImplementation by getting
+    val testRuntimeOnly by getting
+
+    val unitImplementation by getting { extendsFrom(testImplementation) }
+    val unitRuntimeOnly by getting { extendsFrom(testRuntimeOnly) }
+
+    val integrationImplementation by getting { extendsFrom(testImplementation) }
+    val integrationRuntimeOnly by getting { extendsFrom(testRuntimeOnly) }
+}
+
+tasks {
+    val unit = "unit"
+    val integration = "integration"
+
+    withType<Test> {
+        useJUnitPlatform()
+    }
+
+    named<Test>("test") {
+        description = "Runs both unit and integration tests via `gradlew test`."
+        group = "verification"
+        testClassesDirs = sourceSets[unit].output.classesDirs + sourceSets[integration].output.classesDirs
+        classpath = sourceSets[unit].runtimeClasspath + sourceSets[integration].runtimeClasspath
+    }
+
+    register<Test>(unit) {
+        description = "Runs unit tests."
+        group = "verification"
+        testClassesDirs = sourceSets.named(unit).get().output.classesDirs
+        classpath = sourceSets.named(unit).get().runtimeClasspath
+    }
+
+    register<Test>(integration) {
+        description = "Runs integration tests."
+        group = "verification"
+        testClassesDirs = sourceSets.named(integration).get().output.classesDirs
+        classpath = sourceSets.named(integration).get().runtimeClasspath
+    }
+
+    named("check") {
+        dependsOn("test")
+    }
 }
