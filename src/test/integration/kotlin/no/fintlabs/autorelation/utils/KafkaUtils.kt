@@ -1,4 +1,4 @@
-package no.fintlabs.autorelation.kafka.helper
+package no.fintlabs.autorelation.utils
 
 import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.NewTopic
@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 @Component
-class KafkaAdminTools(
+class KafkaUtils(
     private val kafkaAdmin: KafkaAdmin
 ) {
 
