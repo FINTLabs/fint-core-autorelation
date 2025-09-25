@@ -104,13 +104,6 @@ tasks {
         useJUnitPlatform()
     }
 
-    named<Test>("test") {
-        description = "Runs both unit and integration tests via `gradlew test`."
-        group = "verification"
-        testClassesDirs = sourceSets[unit].output.classesDirs + sourceSets[integration].output.classesDirs
-        classpath = sourceSets[unit].runtimeClasspath + sourceSets[integration].runtimeClasspath
-    }
-
     register<Test>(unit) {
         description = "Runs unit tests."
         group = "verification"
@@ -126,6 +119,6 @@ tasks {
     }
 
     named("check") {
-        dependsOn("test")
+        dependsOn(unit, integration)
     }
 }
