@@ -1,9 +1,8 @@
 package no.fintlabs.autorelation.kafka
 
 import no.fintlabs.autorelation.AutoRelationService
-import no.fintlabs.autorelation.utils.createFravarsregistreringResource
+import no.fintlabs.autorelation.createFravarsregistreringResource
 import no.fintlabs.autorelation.kafka.producer.EntityProducer
-import no.fintlabs.autorelation.utils.KafkaUtils
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

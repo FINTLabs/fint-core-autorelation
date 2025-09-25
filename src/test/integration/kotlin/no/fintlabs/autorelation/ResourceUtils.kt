@@ -1,4 +1,4 @@
-package no.fintlabs.autorelation.utils
+package no.fintlabs.autorelation
 
 import no.fint.model.felles.kompleksedatatyper.Identifikator
 import no.fint.model.resource.Link

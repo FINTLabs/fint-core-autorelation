@@ -2,6 +2,7 @@ package no.fintlabs.autorelation.kafka
 
 import io.mockk.mockk
 import no.fintlabs.autorelation.AutoRelationService
+import no.fintlabs.autorelation.kafka.mapper.RelationRequestMapper
 import no.fintlabs.metamodel.MetamodelService
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.junit.jupiter.api.Assertions.assertFalse
