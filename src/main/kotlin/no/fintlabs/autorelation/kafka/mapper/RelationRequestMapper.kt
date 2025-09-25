@@ -1,4 +1,4 @@
-package no.fintlabs.autorelation.kafka
+package no.fintlabs.autorelation.kafka.mapper
 
 import no.fintlabs.autorelation.model.RelationOperation
 import no.fintlabs.autorelation.model.RelationRequest

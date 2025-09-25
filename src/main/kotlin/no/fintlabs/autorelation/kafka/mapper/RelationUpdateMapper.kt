@@ -1,6 +1,11 @@
-package no.fintlabs.autorelation.kafka
+package no.fintlabs.autorelation.kafka.mapper
 
-import no.fintlabs.autorelation.model.*
+import no.fintlabs.autorelation.model.RelationRef
+import no.fintlabs.autorelation.model.RelationRequest
+import no.fintlabs.autorelation.model.RelationSpec
+import no.fintlabs.autorelation.model.RelationUpdate
+import no.fintlabs.autorelation.model.ResourceId
+import no.fintlabs.autorelation.model.ResourceRef
 import org.springframework.stereotype.Component
 
 @Component
