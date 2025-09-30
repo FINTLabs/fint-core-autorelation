@@ -2,9 +2,6 @@ package no.fintlabs.autorelation.kafka
 
 import no.fintlabs.autorelation.AutoRelationService
 import no.fintlabs.autorelation.kafka.mapper.RelationRequestMapper
-import no.fintlabs.autorelation.model.RelationOperation
-import no.fintlabs.autorelation.model.RelationRequest
-import no.fintlabs.autorelation.model.ResourceType
 import no.fintlabs.kafka.common.topic.pattern.FormattedTopicComponentPattern
 import no.fintlabs.kafka.entity.EntityConsumerFactoryService
 import no.fintlabs.kafka.entity.topic.EntityTopicNamePatternParameters
@@ -14,8 +11,6 @@ import org.apache.kafka.common.header.Headers
 import org.springframework.context.annotation.Bean
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer
 import org.springframework.stereotype.Component
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 @Component
 class EntityConsumer(
