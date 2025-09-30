@@ -15,7 +15,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import java.util.concurrent.TimeUnit
 
 @SpringBootTest
-@EmbeddedKafka(partitions = 1, controlledShutdown = true, count = 2)
+@EmbeddedKafka(
+    partitions = 1,
+    controlledShutdown = true,
+    topics = ["fintlabs-no.fint-core.entity.utdanning-vurdering-fravarsregistrering"]
+)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class EntityConsumerTest @Autowired constructor(
     private val kafkaUtils: KafkaUtils,
@@ -29,12 +33,6 @@ class EntityConsumerTest @Autowired constructor(
 
     @MockitoSpyBean
     lateinit var autoRelation: AutoRelationService
-
-    @BeforeEach
-    fun resetSpies() {
-        kafkaUtils.resetTopics("fintlabs-no.fint-core.entity.utdanning-vurdering-$topicResource")
-        reset(entityConsumer, autoRelation)
-    }
 
     @Test
     fun `consumes entity when produced to topic`() {
