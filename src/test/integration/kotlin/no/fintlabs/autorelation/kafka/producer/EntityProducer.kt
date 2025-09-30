@@ -3,15 +3,12 @@ package no.fintlabs.autorelation.kafka.producer
 import no.fintlabs.kafka.entity.EntityProducerFactory
 import no.fintlabs.kafka.entity.EntityProducerRecord
 import no.fintlabs.kafka.entity.topic.EntityTopicNameParameters
-import no.fintlabs.kafka.entity.topic.EntityTopicService
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.springframework.stereotype.Component
-import java.time.Duration
 import java.util.*
 
 @Component
 class EntityProducer(
-    private val entityTopicService: EntityTopicService,
     entityProducerFactory: EntityProducerFactory
 ) {
 
@@ -19,8 +16,6 @@ class EntityProducer(
 
     fun produceEntity(resource: String, resourceObject: Any, consumerProduced: Boolean = false) =
         createEntityTopic(resource).let { topic ->
-            ensureTopic(topic)
-
             entityProducer.send(
                 EntityProducerRecord.builder<Any>()
                     .topicNameParameters(topic)
@@ -36,9 +31,6 @@ class EntityProducer(
             if (addConsumer)
                 add("consumer", byteArrayOf())
         }
-
-    private fun ensureTopic(topic: EntityTopicNameParameters) =
-        entityTopicService.ensureTopic(topic, Duration.ofSeconds(500).toMillis())
 
     private fun createEntityTopic(resource: String) =
         EntityTopicNameParameters.builder()
