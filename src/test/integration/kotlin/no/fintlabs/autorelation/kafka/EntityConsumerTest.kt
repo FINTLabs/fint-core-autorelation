@@ -4,11 +4,11 @@ import no.fintlabs.autorelation.AutoRelationService
 import no.fintlabs.autorelation.createFravarsregistreringResource
 import no.fintlabs.autorelation.kafka.producer.EntityProducer
 import org.awaitility.Awaitility.await
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer
 import org.springframework.kafka.test.context.EmbeddedKafka
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
@@ -23,7 +23,8 @@ import java.util.concurrent.TimeUnit
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class EntityConsumerTest @Autowired constructor(
     private val kafkaUtils: KafkaUtils,
-    private val entityProducer: EntityProducer
+    private val entityProducer: EntityProducer,
+    private val entityConsumerContainer: ConcurrentMessageListenerContainer<String?, Any>
 ) {
 
     private val topicResource = "fravarsregistrering"
@@ -33,6 +34,20 @@ class EntityConsumerTest @Autowired constructor(
 
     @MockitoSpyBean
     lateinit var autoRelation: AutoRelationService
+
+    @Test
+    fun `does not reset offset on container restart`() {
+        `consumes entity when produced to topic`()
+
+        entityConsumerContainer.stop()
+        entityConsumerContainer.start()
+
+        clearInvocations(entityConsumer, autoRelation)
+
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+            verify(entityConsumer, never()).consumeRecord(any())
+        }
+    }
 
     @Test
     fun `consumes entity when produced to topic`() {
