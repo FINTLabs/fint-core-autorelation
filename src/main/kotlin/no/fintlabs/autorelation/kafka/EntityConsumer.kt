@@ -3,6 +3,7 @@ package no.fintlabs.autorelation.kafka
 import no.fintlabs.autorelation.AutoRelationService
 import no.fintlabs.autorelation.kafka.mapper.RelationRequestMapper
 import no.fintlabs.kafka.common.topic.pattern.FormattedTopicComponentPattern
+import no.fintlabs.kafka.entity.EntityConsumerConfiguration
 import no.fintlabs.kafka.entity.EntityConsumerFactoryService
 import no.fintlabs.kafka.entity.topic.EntityTopicNamePatternParameters
 import no.fintlabs.metamodel.MetamodelService
@@ -20,13 +21,16 @@ class EntityConsumer(
 ) {
 
     @Bean
-    fun concurrentMessageListenerContainer(
+    fun entityConsumerContainer(
         entityConsumerFactoryService: EntityConsumerFactoryService,
-    ): ConcurrentMessageListenerContainer<String?, Any> {
-        return entityConsumerFactoryService
+    ): ConcurrentMessageListenerContainer<String?, Any> =
+        entityConsumerFactoryService
             .createFactory(
                 Any::class.java,
-                this::consumeRecord
+                this::consumeRecord,
+                EntityConsumerConfiguration.builder()
+                    .seekingOffsetResetOnAssignment(false)
+                    .build()
             )
             .createContainer(
                 EntityTopicNamePatternParameters.builder()
@@ -35,7 +39,6 @@ class EntityConsumer(
                     .resource(FormattedTopicComponentPattern.anyOf(*formattedResourceTopics().toTypedArray()))
                     .build()
             )
-    }
 
     fun consumeRecord(consumerRecord: ConsumerRecord<String, Any>) =
         consumerRecord.takeIf { shouldBeProcessed(it.value(), it.headers()) }
