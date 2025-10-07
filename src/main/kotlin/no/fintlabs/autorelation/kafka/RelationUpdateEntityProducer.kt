@@ -18,7 +18,7 @@ class RelationUpdateEntityProducer(
     private val entityProducer = entityProducerFactory.createProducer(RelationUpdate::class.java)
 
     init {
-        entityTopicService.ensureTopic(entityTopic, Duration.ofHours(1).toMillis())
+        entityTopicService.ensureTopic(entityTopic, Duration.ofDays(7).toMillis())
     }
 
     fun publishRelationUpdate(relationUpdate: RelationUpdate) =
