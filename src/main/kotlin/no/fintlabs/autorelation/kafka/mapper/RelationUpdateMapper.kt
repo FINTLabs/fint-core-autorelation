@@ -30,7 +30,7 @@ class RelationUpdateMapper {
                 name = relationSpec.inversedRelation.name,
                 ids = relationIds
             ),
-            entityCreatedTime = request.entityRetentionTime
+            entityCreatedTime = request.entityCreatedTime
         )
 
 }
