@@ -35,6 +35,7 @@ dependencies {
 
     implementation("org.springframework.kafka:spring-kafka")
     implementation("no.fintlabs:fint-kafka:3.2.0-rc-3")
+    implementation("no.fintlabs:fint-core-consumer-metamodel:2.0.0-rc-4")
     implementation("no.fintlabs:fint-core-autorelation-lib:2.0.0")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
