@@ -2,7 +2,7 @@ package no.fintlabs.autorelation
 
 import no.fintlabs.autorelation.kafka.producer.EntityProducer
 import no.fintlabs.autorelation.kafka.KafkaUtils
-import no.fintlabs.autorelation.kafka.RelationUpdateEventProducer
+import no.fintlabs.autorelation.kafka.RelationUpdateEntityProducer
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,7 +30,7 @@ class AutoRelationServiceTest @Autowired constructor(
     private lateinit var autoRelation: AutoRelationService
 
     @MockitoSpyBean
-    private lateinit var relationUpdateProducer: RelationUpdateEventProducer
+    private lateinit var relationUpdateProducer: RelationUpdateEntityProducer
 
     private val topicResource = "fravarsregistrering"
 

@@ -4,7 +4,7 @@ import no.fint.model.resource.FintLinks
 import no.fint.model.resource.FintResource
 import no.fint.model.resource.Link
 import no.fintlabs.autorelation.cache.RelationCache
-import no.fintlabs.autorelation.kafka.RelationUpdateEventProducer
+import no.fintlabs.autorelation.kafka.RelationUpdateEntityProducer
 import no.fintlabs.autorelation.kafka.mapper.RelationUpdateMapper
 import no.fintlabs.autorelation.model.RelationRequest
 import no.fintlabs.autorelation.model.RelationSpec
@@ -17,7 +17,7 @@ class AutoRelationService(
     private val mapper: RelationUpdateMapper,
     private val relationCache: RelationCache,
     private val resourceMapper: ResourceMapperService,
-    private val eventPublisher: RelationUpdateEventProducer
+    private val entityProducer: RelationUpdateEntityProducer
 ) {
 
     fun processRequest(relationRequest: RelationRequest) =
@@ -35,7 +35,7 @@ class AutoRelationService(
             getRelationLink(resourceObject, relationSpec.resourceRelation.name)
                 ?.let(::createResourceIdFromLink)
                 ?.let { resourceId -> buildRelationUpdate(request, relationSpec, resourceObject, resourceId) }
-                ?.let { relationUpdate -> eventPublisher.publishRelationUpdate(relationUpdate) }
+                ?.let { relationUpdate -> entityProducer.publishRelationUpdate(relationUpdate) }
         }
 
     private fun buildRelationUpdate(
