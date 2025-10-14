@@ -1,68 +1,34 @@
 package no.fintlabs.autorelation
 
-import no.fint.model.resource.FintLinks
 import no.fint.model.resource.FintResource
-import no.fint.model.resource.Link
 import no.fintlabs.autorelation.cache.RelationCache
 import no.fintlabs.autorelation.kafka.RelationUpdateEntityProducer
-import no.fintlabs.autorelation.kafka.mapper.RelationUpdateMapper
 import no.fintlabs.autorelation.model.RelationRequest
-import no.fintlabs.autorelation.model.RelationSpec
 import no.fintlabs.autorelation.model.RelationUpdate
-import no.fintlabs.autorelation.model.ResourceId
 import org.springframework.stereotype.Service
 
 @Service
 class AutoRelationService(
-    private val mapper: RelationUpdateMapper,
     private val relationCache: RelationCache,
     private val resourceMapper: ResourceMapperService,
     private val entityProducer: RelationUpdateEntityProducer
 ) {
 
-    fun processRequest(relationRequest: RelationRequest) =
-        relationCache.getRelationSpecs(relationRequest.type)?.let { relationSpecs ->
-            resourceMapper.mapResource(relationRequest.type, relationRequest.resource)
-                ?.let { parseRelationSpecs(relationRequest, relationSpecs, it) }
-        }
+    fun processRequest(request: RelationRequest): Int =
+        takeIf { relationCache.isTriggerResourceType(request.type) }
+            ?.let { resourceMapper.mapResource(request.type, request.resource) }
+            ?.let { createRelationUpdates(request, it) }
+            ?.let { publishRelationUpdates(it) }
+            ?: 0
 
-    private fun parseRelationSpecs(
-        request: RelationRequest,
-        relationSpecs: List<RelationSpec>,
-        resourceObject: FintResource
-    ) =
-        relationSpecs.forEach { relationSpec ->
-            getRelationLink(resourceObject, relationSpec.resourceRelation.name)
-                ?.let(::createResourceIdFromLink)
-                ?.let { resourceId -> buildRelationUpdate(request, relationSpec, resourceObject, resourceId) }
-                ?.let { relationUpdate -> entityProducer.publishRelationUpdate(relationUpdate) }
-        }
 
-    private fun buildRelationUpdate(
-        request: RelationRequest,
-        relationSpec: RelationSpec,
-        resourceObject: FintResource,
-        resourceId: ResourceId
-    ): RelationUpdate? =
-        createRelationIds(resourceObject)
-            ?.let { relationIds -> mapper.map(request, relationSpec, resourceId, relationIds) }
+    private fun createRelationUpdates(request: RelationRequest, resourceObject: FintResource): List<RelationUpdate> =
+        relationCache.rulesForTrigger(request.type)
+            .mapNotNull { RelationUpdate.from(request, resourceObject, it) }
 
-    // TODO: Log required relations missing?
-    private fun getRelationLink(fintLinks: FintLinks, relationName: String): Link? =
-        fintLinks.links?.get(relationName)?.firstOrNull()
-
-    private fun createRelationIds(resourceObject: FintResource): List<ResourceId>? =
-        resourceObject.identifikators
-            .filterValues { it != null }
-            .map { (idField, identifikator) ->
-                ResourceId(idField, identifikator!!.identifikatorverdi)
-            }
-            .takeIf { it.isNotEmpty() }
-
-    private fun createResourceIdFromLink(link: Link) =
-        getIdPair(link.href).let { (idField, idValue) -> ResourceId(idField, idValue) }
-
-    private fun getIdPair(href: String) =
-        href.split("/").takeLast(2)
+    private fun publishRelationUpdates(relationUpdates: List<RelationUpdate>): Int =
+        relationUpdates
+            .onEach { entityProducer.publishRelationUpdate(it) }
+            .size
 
 }
