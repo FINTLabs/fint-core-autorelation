@@ -2,7 +2,7 @@ package no.fintlabs.autorelation
 
 import no.fint.model.resource.FintResource
 import no.fintlabs.autorelation.cache.RelationCache
-import no.fintlabs.autorelation.kafka.RelationUpdateEntityProducer
+import no.fintlabs.autorelation.kafka.RelationUpdateProducer
 import no.fintlabs.autorelation.model.RelationRequest
 import no.fintlabs.autorelation.model.RelationUpdate
 import org.springframework.stereotype.Service
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service
 class AutoRelationService(
     private val relationCache: RelationCache,
     private val resourceMapper: ResourceMapperService,
-    private val entityProducer: RelationUpdateEntityProducer
+    private val entityProducer: RelationUpdateProducer
 ) {
 
     fun processRequest(request: RelationRequest): Int =

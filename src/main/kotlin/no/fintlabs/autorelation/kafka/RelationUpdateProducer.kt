@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 
 @Component
-class RelationUpdateEntityProducer(
+class RelationUpdateProducer(
     entityTopicService: EntityTopicService,
     entityProducerFactory: EntityProducerFactory
 ) {
