@@ -7,6 +7,7 @@ import no.fintlabs.kafka.entity.topic.EntityTopicNameParameters
 import no.fintlabs.kafka.entity.topic.EntityTopicService
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.util.UUID
 
 @Component
 class RelationUpdateEntityProducer(
@@ -25,6 +26,7 @@ class RelationUpdateEntityProducer(
         entityProducer.send(
             EntityProducerRecord.builder<RelationUpdate>()
                 .topicNameParameters(entityTopic)
+                .key(relationUpdate.resource.id)
                 .value(relationUpdate)
                 .build()
         )
