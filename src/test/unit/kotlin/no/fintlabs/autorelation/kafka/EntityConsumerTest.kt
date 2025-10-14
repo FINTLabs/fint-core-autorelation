@@ -2,7 +2,6 @@ package no.fintlabs.autorelation.kafka
 
 import io.mockk.mockk
 import no.fintlabs.autorelation.AutoRelationService
-import no.fintlabs.autorelation.kafka.mapper.RelationRequestMapper
 import no.fintlabs.metamodel.MetamodelService
 import org.apache.kafka.common.header.internals.RecordHeaders
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -14,36 +13,25 @@ class EntityConsumerTest {
 
     private lateinit var metamodelService: MetamodelService
     private lateinit var autoRelation: AutoRelationService
-    private lateinit var relationRequestMapper: RelationRequestMapper
     private lateinit var consumer: EntityConsumer
+
+    private val headers = RecordHeaders()
 
     @BeforeEach
     fun setUp() {
-        relationRequestMapper = mockk(relaxed = true)
         metamodelService = mockk(relaxed = true)
         autoRelation = mockk(relaxed = true)
-        consumer = EntityConsumer(metamodelService, autoRelation, relationRequestMapper)
+        consumer = EntityConsumer(metamodelService, autoRelation)
     }
 
     @Test
-    fun `process non-null values and no consumer header`() {
-        assertTrue(consumer.shouldBeProcessed("im not null", createHeaders(addConsumerHeader = false)))
+    fun `process non-null values`() {
+        assertTrue(consumer.shouldBeProcessed("not null", headers))
     }
 
     @Test
     fun `dont process null values`() {
-        assertFalse(consumer.shouldBeProcessed(null, createHeaders(addConsumerHeader = false)))
+        assertFalse(consumer.shouldBeProcessed(null, headers))
     }
-
-    @Test
-    fun `dont process consumer headers`() {
-        assertFalse(consumer.shouldBeProcessed("not null", createHeaders(addConsumerHeader = true)))
-    }
-
-    private fun createHeaders(addConsumerHeader: Boolean = false) =
-        RecordHeaders().apply {
-            if (addConsumerHeader)
-                add("consumer", byteArrayOf())
-        }
 
 }
