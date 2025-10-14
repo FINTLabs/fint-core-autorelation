@@ -7,7 +7,6 @@ import no.fintlabs.kafka.entity.topic.EntityTopicNameParameters
 import no.fintlabs.kafka.entity.topic.EntityTopicService
 import org.springframework.stereotype.Component
 import java.time.Duration
-import java.util.UUID
 
 @Component
 class RelationUpdateEntityProducer(
@@ -15,11 +14,15 @@ class RelationUpdateEntityProducer(
     entityProducerFactory: EntityProducerFactory
 ) {
 
+    companion object {
+        private const val RETENTION_TIME_IN_DAYS = 7L
+    }
+
     private val entityTopic = createEntityTopic()
     private val entityProducer = entityProducerFactory.createProducer(RelationUpdate::class.java)
 
     init {
-        entityTopicService.ensureTopic(entityTopic, Duration.ofDays(7).toMillis())
+        entityTopicService.ensureTopic(entityTopic, Duration.ofDays(RETENTION_TIME_IN_DAYS).toMillis())
     }
 
     fun publishRelationUpdate(relationUpdate: RelationUpdate) =
