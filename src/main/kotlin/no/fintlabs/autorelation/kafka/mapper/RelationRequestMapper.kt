@@ -17,8 +17,7 @@ class RelationRequestMapper {
             orgId = getOrgId(consumerRecord.topic()),
             type = getResourceType(consumerRecord.topic()),
             resource = consumerRecord.value(),
-            operation = RelationOperation.ADD,
-            entityRetentionTime = getEntityRetentionTime(consumerRecord.headers())
+            operation = RelationOperation.ADD
         )
 
     private fun getOrgId(topic: String) = topic.substringBefore(".")
