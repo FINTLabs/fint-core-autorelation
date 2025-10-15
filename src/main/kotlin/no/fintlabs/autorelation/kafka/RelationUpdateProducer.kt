@@ -15,7 +15,7 @@ class RelationUpdateProducer(
 ) {
 
     companion object {
-        private const val RETENTION_TIME_IN_DAYS = 7L
+        const val RETENTION_TIME_IN_DAYS = 7L
     }
 
     private val entityTopic = createEntityTopic()
