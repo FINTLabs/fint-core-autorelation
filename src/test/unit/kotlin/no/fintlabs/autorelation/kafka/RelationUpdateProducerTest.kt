@@ -1,48 +1,67 @@
 package no.fintlabs.autorelation.kafka
 
 import io.mockk.*
+import io.mockk.impl.annotations.MockK
+import io.mockk.junit5.MockKExtension
+import no.fintlabs.autorelation.kafka.RelationUpdateProducer.Companion.RETENTION_TIME_IN_DAYS
 import no.fintlabs.autorelation.model.RelationUpdate
 import no.fintlabs.kafka.entity.EntityProducer
 import no.fintlabs.kafka.entity.EntityProducerFactory
 import no.fintlabs.kafka.entity.topic.EntityTopicNameParameters
 import no.fintlabs.kafka.entity.topic.EntityTopicService
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import java.time.Duration
 import kotlin.test.assertEquals
 
+@ExtendWith(MockKExtension::class)
 class RelationUpdateProducerTest {
 
-    val entityTopicService: EntityTopicService = mockk()
-    val entityProducerFactory: EntityProducerFactory = mockk()
-    val producer: EntityProducer<RelationUpdate> = mockk()
+    @MockK
+    lateinit var entityTopicService: EntityTopicService
+    @MockK
+    lateinit var entityProducerFactory: EntityProducerFactory
+    @MockK
+    lateinit var producer: EntityProducer<RelationUpdate>
+
+    private companion object {
+        const val ORG = "fintlabs-no"
+        const val DOMAIN = "fint-core"
+        const val RESOURCE = "relation-update"
+        val RETENTION_MILLIS = Duration.ofDays(RETENTION_TIME_IN_DAYS).toMillis()
+    }
 
     @BeforeEach
     fun setUp() {
+        every { entityProducerFactory.createProducer(RelationUpdate::class.java) } returns producer
+        every { entityTopicService.ensureTopic(any(), any()) } just Runs
+    }
+
+    @AfterEach
+    fun cleanup() {
         clearMocks(entityTopicService, entityProducerFactory, producer)
     }
 
 
     @Test
     fun `init ensures topic with expected params and retention`() {
-        val retentionTime = Duration.ofDays(7).toMillis()
-
-        every { entityProducerFactory.createProducer(RelationUpdate::class.java) } returns producer
-
-        val topicSlot = slot<EntityTopicNameParameters>()
-        every { entityTopicService.ensureTopic(capture(topicSlot), retentionTime) } just Runs
-
         RelationUpdateProducer(entityTopicService, entityProducerFactory)
 
-        verify(exactly = 1) { entityProducerFactory.createProducer(RelationUpdate::class.java) }
-        verify(exactly = 1) { entityTopicService.ensureTopic(capture(topicSlot), retentionTime) }
+        verifyOrder {
+            entityProducerFactory.createProducer(RelationUpdate::class.java)
+            entityTopicService.ensureTopic(
+                withArg<EntityTopicNameParameters> {
+                    assertEquals(ORG, it.orgId)
+                    assertEquals(DOMAIN, it.domainContext)
+                    assertEquals(RESOURCE, it.resource)
+                },
+                RETENTION_MILLIS
+            )
+        }
 
-        val capturedTopic = topicSlot.captured
-        assertEquals("fintlabs-no", capturedTopic.orgId)
-        assertEquals("fint-core", capturedTopic.domainContext)
-        assertEquals("relation-update", capturedTopic.resource)
-
-        confirmVerified(entityProducerFactory, entityTopicService)
+        confirmVerified(entityProducerFactory, entityTopicService, producer)
     }
 
 }
