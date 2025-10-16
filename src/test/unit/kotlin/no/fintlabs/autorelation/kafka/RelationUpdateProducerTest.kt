@@ -9,12 +9,11 @@ import no.fintlabs.kafka.entity.EntityProducer
 import no.fintlabs.kafka.entity.EntityProducerFactory
 import no.fintlabs.kafka.entity.topic.EntityTopicNameParameters
 import no.fintlabs.kafka.entity.topic.EntityTopicService
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
 
@@ -39,11 +38,6 @@ class RelationUpdateProducerTest {
     fun setUp() {
         every { entityProducerFactory.createProducer(RelationUpdate::class.java) } returns producer
         every { entityTopicService.ensureTopic(any(), any()) } just Runs
-    }
-
-    @AfterEach
-    fun cleanup() {
-        clearMocks(entityTopicService, entityProducerFactory, producer)
     }
 
 
