@@ -14,6 +14,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import java.time.Duration
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import kotlin.test.assertEquals
 
 @ExtendWith(MockKExtension::class)
@@ -64,4 +66,36 @@ class RelationUpdateProducerTest {
         confirmVerified(entityProducerFactory, entityTopicService, producer)
     }
 
+    @Test
+    fun `publish sends record with resource id as key and full value`() {
+        val expectedKey = UUID.randomUUID().toString()
+        val relationUpdate = mockk<RelationUpdate>()
+
+        every { relationUpdate.resource.id } returns expectedKey
+        every { producer.send(any()) } returns CompletableFuture.completedFuture(null)
+
+        val sut = RelationUpdateProducer(entityTopicService, entityProducerFactory)
+
+        sut.publishRelationUpdate(relationUpdate)
+
+        verify(exactly = 1) {
+            producer.send(withArg { rec ->
+                assertEquals(expectedKey, rec.key)
+                assertEquals(relationUpdate, rec.value)
+
+                rec.topicNameParameters.let {
+                    assertEquals(ORG, it.orgId)
+                    assertEquals(DOMAIN, it.domainContext)
+                    assertEquals(RESOURCE, it.resource)
+                }
+
+            })
+        }
+        verify(exactly = 1) { entityProducerFactory.createProducer(RelationUpdate::class.java) }
+        verify(exactly = 1) { entityTopicService.ensureTopic(any(), RETENTION_MILLIS) }
+
+        confirmVerified(entityProducerFactory, entityTopicService, producer)
+    }
 }
+
+
