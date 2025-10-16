@@ -21,8 +21,8 @@ class ResourceMapperService(
             ?.onFailure { logger.error("Failed mapping resource: ${resourceType.resource}: ${it.message}") }
             ?.getOrNull()
 
-    private fun mapResource(resourceObject: Any, resourceType: Class<out FintResource>): Result<FintResource> =
-        runCatching { objectMapper.convertValue(resourceObject, resourceType) }
+    private fun mapResource(resourceObject: Any, resourceClazz: Class<out FintResource>): Result<FintResource> =
+        runCatching { objectMapper.convertValue(resourceObject, resourceClazz) }
             .onFailure { logger.error(it.message) }
 
 }
