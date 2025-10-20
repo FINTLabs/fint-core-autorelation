@@ -54,8 +54,7 @@ class RelationRequestConsumerTest @Autowired constructor(
             type = ResourceType("utdanning", "vurdering", "elevfravar"),
             orgId = "fintlabs.no",
             resource = "anything",
-            operation = RelationOperation.DELETE,
-            entityRetentionTime = null
+            operation = RelationOperation.DELETE
         )
 
 }
