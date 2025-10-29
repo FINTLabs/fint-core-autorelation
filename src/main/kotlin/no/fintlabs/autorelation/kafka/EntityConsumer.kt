@@ -1,6 +1,7 @@
 package no.fintlabs.autorelation.kafka
 
 import no.fintlabs.autorelation.AutoRelationService
+import no.fintlabs.autorelation.model.RelationOperation
 import no.fintlabs.autorelation.model.RelationRequest
 import no.fintlabs.kafka.common.topic.pattern.FormattedTopicComponentPattern
 import no.fintlabs.kafka.entity.EntityConsumerConfiguration
@@ -41,7 +42,7 @@ class EntityConsumer(
 
     fun consumeRecord(consumerRecord: ConsumerRecord<String, Any>) =
         consumerRecord.takeIf { shouldBeProcessed(it.value(), it.headers()) }
-            ?.let { RelationRequest.fromEntity(it.topic(), it.value()) }
+            ?.let { RelationRequest(it.topic(), it.value(), RelationOperation.ADD) }
             ?.let { autoRelation.processRequest(it) }
 
     fun shouldBeProcessed(value: Any?, headers: Headers) =
