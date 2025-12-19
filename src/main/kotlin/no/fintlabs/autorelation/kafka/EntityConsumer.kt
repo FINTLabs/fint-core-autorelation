@@ -41,9 +41,9 @@ class EntityConsumer(
             )
 
     fun consumeRecord(consumerRecord: ConsumerRecord<String, Any>) =
-        consumerRecord.takeIf { shouldBeProcessed(it.value(), it.headers()) }
-            ?.let { RelationRequest(it.topic(), it.value(), RelationOperation.ADD) }
-            ?.let { autoRelation.processRequest(it) }
+        consumerRecord
+            .let { RelationRequest(it.topic(), it.value(), RelationOperation.ADD) }
+            .run { autoRelation.processRequest(this) }
 
     fun shouldBeProcessed(value: Any?, headers: Headers) =
         value != null && headers.lastHeader("consumer") == null
