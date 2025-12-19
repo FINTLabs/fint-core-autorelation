@@ -45,9 +45,6 @@ class EntityConsumer(
             .let { RelationRequest(it.topic(), it.value(), RelationOperation.ADD) }
             .run { autoRelation.processRequest(this) }
 
-    fun shouldBeProcessed(value: Any?, headers: Headers) =
-        value != null && headers.lastHeader("consumer") == null
-
     private fun formattedResourceTopics(): List<String> =
         metamodelService.getComponents().flatMap { component ->
             component.resources.map { "${component.domainName}-${component.packageName}-${it.name}".lowercase() }
