@@ -1,7 +1,8 @@
 package no.fintlabs.autorelation.kafka
 
 import no.fintlabs.autorelation.AutoRelationService
-import no.fintlabs.autorelation.kafka.mapper.RelationRequestMapper
+import no.fintlabs.autorelation.model.RelationOperation
+import no.fintlabs.autorelation.model.RelationRequest
 import no.fintlabs.kafka.common.topic.pattern.FormattedTopicComponentPattern
 import no.fintlabs.kafka.entity.EntityConsumerConfiguration
 import no.fintlabs.kafka.entity.EntityConsumerFactoryService
@@ -16,8 +17,7 @@ import org.springframework.stereotype.Component
 @Component
 class EntityConsumer(
     private val metamodelService: MetamodelService,
-    private val autoRelation: AutoRelationService,
-    private val relationRequestMapper: RelationRequestMapper
+    private val autoRelation: AutoRelationService
 ) {
 
     @Bean
@@ -41,12 +41,9 @@ class EntityConsumer(
             )
 
     fun consumeRecord(consumerRecord: ConsumerRecord<String, Any>) =
-        consumerRecord.takeIf { shouldBeProcessed(it.value(), it.headers()) }
-            ?.let { relationRequestMapper.createRelationRequest(it) }
-            ?.let { autoRelation.processRequest(it) }
-
-    fun shouldBeProcessed(value: Any?, headers: Headers) =
-        value != null && headers.lastHeader("consumer") == null
+        consumerRecord
+            .let { RelationRequest(it.topic(), it.value(), RelationOperation.ADD) }
+            .run { autoRelation.processRequest(this) }
 
     private fun formattedResourceTopics(): List<String> =
         metamodelService.getComponents().flatMap { component ->

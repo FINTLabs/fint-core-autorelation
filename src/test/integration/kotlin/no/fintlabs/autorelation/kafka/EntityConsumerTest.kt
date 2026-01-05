@@ -59,14 +59,4 @@ class EntityConsumerTest @Autowired constructor(
         }
     }
 
-    @Test
-    fun `does not consume entity if it was produced by consumer itself`() {
-        entityProducer.produceEntity(topicResource, createFravarsregistreringResource(), consumerProduced = true)
-
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted {
-            verify(entityConsumer, atLeastOnce()).consumeRecord(any())
-            verify(autoRelation, never()).processRequest(any())
-        }
-    }
-
 }
