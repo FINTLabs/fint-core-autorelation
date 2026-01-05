@@ -1,8 +1,8 @@
 package no.fintlabs.autorelation
 
-import no.fintlabs.autorelation.kafka.producer.EntityProducer
 import no.fintlabs.autorelation.kafka.KafkaUtils
 import no.fintlabs.autorelation.kafka.RelationUpdateProducer
+import no.fintlabs.autorelation.kafka.producer.EntityProducer
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit
 @SpringBootTest
 @EmbeddedKafka(partitions = 1, controlledShutdown = true, count = 2)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@Suppress("SpringJavaInjectionPointsAutowiringInspection")
 class AutoRelationServiceTest @Autowired constructor(
     private val kafkaUtils: KafkaUtils,
     private val entityProducer: EntityProducer
