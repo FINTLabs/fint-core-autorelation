@@ -15,6 +15,10 @@ class RelationUpdateProducer(
 ) {
 
     companion object {
+        /**
+         * Retention time (7 days) matches the Core 2 maximum to ensure
+         * relation updates do not expire before their associated resources.
+         */
         const val RETENTION_TIME_IN_DAYS = 7L
     }
 
