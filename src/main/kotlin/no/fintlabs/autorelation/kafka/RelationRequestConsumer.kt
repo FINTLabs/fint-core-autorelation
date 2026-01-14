@@ -1,7 +1,8 @@
 package no.fintlabs.autorelation.kafka
 
+import kotlinx.coroutines.runBlocking
 import no.fintlabs.autorelation.AutoRelationService
-import no.fintlabs.autorelation.model.RelationRequest
+import no.fintlabs.autorelation.model.RelationEvent
 import no.fintlabs.kafka.event.EventConsumerFactoryService
 import no.fintlabs.kafka.event.topic.EventTopicNameParameters
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -10,17 +11,17 @@ import org.springframework.kafka.listener.ConcurrentMessageListenerContainer
 import org.springframework.stereotype.Component
 
 @Component
-class RelationRequestConsumer(
+class RelationEventConsumer(
     private val autoRelationService: AutoRelationService
 ) {
 
     @Bean
-    fun relationRequestContainer(
+    fun relationEventContainer(
         eventConsumerFactory: EventConsumerFactoryService,
-    ): ConcurrentMessageListenerContainer<String?, RelationRequest> =
+    ): ConcurrentMessageListenerContainer<String?, RelationEvent> =
         eventConsumerFactory
             .createFactory(
-                RelationRequest::class.java,
+                RelationEvent::class.java,
                 this::consumeRecord
             )
             .createContainer(
@@ -32,7 +33,8 @@ class RelationRequestConsumer(
             )
 
 
-    fun consumeRecord(consumerRecord: ConsumerRecord<String, RelationRequest>) =
+    fun consumeRecord(consumerRecord: ConsumerRecord<String, RelationEvent>) = runBlocking {
         autoRelationService.processRequest(consumerRecord.value())
+    }
 
 }

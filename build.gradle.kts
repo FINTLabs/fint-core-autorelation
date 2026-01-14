@@ -20,43 +20,46 @@ repositories {
     maven("https://repo.fintlabs.no/releases")
 }
 
-val fintVersion = "3.19.0"
-val fintTestVersion = "3.19.0"
-
+val fintVersion = "3.21.11-rc-4"
+val fintTestVersion = "3.21.11-rc-4"
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
-
-    implementation("no.fint:fint-utdanning-resource-model-java:$fintVersion")
-    implementation("no.fint:fint-administrasjon-resource-model-java:$fintVersion")
-    implementation("no.fint:fint-personvern-resource-model-java:$fintVersion")
-    implementation("no.fint:fint-okonomi-resource-model-java:$fintVersion")
-    implementation("no.fint:fint-ressurs-resource-model-java:$fintVersion")
-    implementation("no.fint:fint-arkiv-resource-model-java:$fintVersion")
-
-    implementation("org.springframework.kafka:spring-kafka")
-    implementation("no.fintlabs:fint-kafka:3.2.0-rc-3")
-    implementation("no.fintlabs:fint-core-consumer-metamodel:2.0.0-rc-4")
-    implementation("no.fintlabs:fint-core-autorelation-lib:4.1.0")
-
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
 
-    testImplementation("no.fint:fint-utdanning-resource-model-java:${fintTestVersion}")
-    testImplementation("no.fint:fint-administrasjon-resource-model-java:${fintTestVersion}")
-    testImplementation("no.fint:fint-personvern-resource-model-java:${fintTestVersion}")
+    implementation("no.fint:fint-arkiv-resource-model-java:$fintVersion")
+    implementation("no.fint:fint-okonomi-resource-model-java:$fintVersion")
+    implementation("no.fint:fint-ressurs-resource-model-java:$fintVersion")
+    implementation("no.fint:fint-utdanning-resource-model-java:$fintVersion")
+    implementation("no.fint:fint-personvern-resource-model-java:$fintVersion")
+    implementation("no.fint:fint-administrasjon-resource-model-java:$fintVersion")
+
+    implementation("no.fintlabs:fint-kafka:3.2.0-rc-3")
+    implementation("org.springframework.kafka:spring-kafka")
+    implementation("no.novari:fint-core-metamodel:4.0.0-rc-1")
+    implementation("no.fintlabs:fint-core-autorelation-lib:6.0.0-rc-2")
+
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("io.micrometer:micrometer-registry-prometheus")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
+    testImplementation("no.fint:fint-arkiv-resource-model-java:${fintTestVersion}")
     testImplementation("no.fint:fint-okonomi-resource-model-java:${fintTestVersion}")
     testImplementation("no.fint:fint-ressurs-resource-model-java:${fintTestVersion}")
-    testImplementation("no.fint:fint-arkiv-resource-model-java:${fintTestVersion}")
+    testImplementation("no.fint:fint-utdanning-resource-model-java:${fintTestVersion}")
+    testImplementation("no.fint:fint-personvern-resource-model-java:${fintTestVersion}")
+    testImplementation("no.fint:fint-administrasjon-resource-model-java:${fintTestVersion}")
 
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("org.mockito:mockito-core")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation("org.awaitility:awaitility:4.2.0")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation("org.springframework.kafka:spring-kafka-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 kotlin {
