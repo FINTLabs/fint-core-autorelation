@@ -4,130 +4,176 @@ import io.mockk.*
 import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
+import kotlinx.coroutines.test.runTest
 import no.fint.model.resource.FintResource
-import no.fintlabs.autorelation.cache.RelationCache
+import no.fintlabs.autorelation.cache.RelationRuleRegistry
 import no.fintlabs.autorelation.kafka.RelationUpdateProducer
-import no.fintlabs.autorelation.model.RelationRequest
-import no.fintlabs.autorelation.model.RelationSyncRule
-import no.fintlabs.autorelation.model.RelationUpdate
-import no.fintlabs.autorelation.model.ResourceType
+import no.fintlabs.autorelation.model.*
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.kafka.support.SendResult
 import java.util.concurrent.CompletableFuture
-import kotlin.test.assertEquals
 
 @ExtendWith(MockKExtension::class)
 class AutoRelationServiceTest {
 
-    @MockK lateinit var relationCache: RelationCache
-    @MockK lateinit var resourceMapper: ResourceMapperService
-    @MockK lateinit var producer: RelationUpdateProducer
+    @MockK
+    lateinit var relationRuleRegistry: RelationRuleRegistry
+
+    @MockK
+    lateinit var resourceConverter: ResourceConverterService
+
+    @MockK
+    lateinit var relationUpdateProducer: RelationUpdateProducer
+
+    @MockK(relaxed = true)
+    lateinit var metricService: MetricService
 
     @InjectMockKs
-    lateinit var sut: AutoRelationService
+    lateinit var autoRelationService: AutoRelationService
 
-    @Test
-    fun `returns 0 and does not publish when type is not a trigger`() {
-        val request = mockk<RelationRequest>()
-        val type = mockk<ResourceType>()
-        every { request.type } returns type
-        every { relationCache.isTriggerResourceType(type) } returns false
+    @BeforeEach
+    fun setup() {
+        mockkStatic("no.fintlabs.autorelation.model.RelationUpdateKt")
+    }
 
-        val result = sut.processRequest(request)
-
-        assertEquals(0, result)
-        verify(exactly = 1) { relationCache.isTriggerResourceType(type) }
-        verify(exactly = 0) {
-            resourceMapper.mapResource(any(), any())
-            relationCache.rulesForTrigger(any())
-            producer.publishRelationUpdate(any())
-        }
+    @AfterEach
+    fun tearDown() {
+        unmockkStatic("no.fintlabs.autorelation.model.RelationUpdateKt")
     }
 
     @Test
-    fun `returns 0 and does not publish when mapper returns null`() {
-        val type = mockk<ResourceType>()
-        val request = request(type, mapOf("id" to "1"))
-        every { relationCache.isTriggerResourceType(type) } returns true
-        every { resourceMapper.mapResource(type, request.resource) } returns null
+    fun `processRequest should return 0 and stop if conversion fails`() = runTest {
+        val event = createEvent()
 
-        val result = sut.processRequest(request)
+        every { resourceConverter.convertToFintResource(any(), any()) } throws
+                ResourceConversionException("Bad JSON")
+
+        val result = autoRelationService.processRequest(event)
 
         assertEquals(0, result)
-        verify(exactly = 1) {
-            relationCache.isTriggerResourceType(type)
-            resourceMapper.mapResource(type, request.resource)
+
+        verify {
+            metricService.incrementRelationFailure(
+                sourceId = "123",
+                resourceName = "elevfravar",
+                reason = MetricReason.CONVERSION_FAILED
+            )
         }
-        verify(exactly = 0) {
-            relationCache.rulesForTrigger(any())
-            producer.publishRelationUpdate(any())
-        }
+
+        verify(exactly = 0) { relationRuleRegistry.getRules(any()) }
     }
 
     @Test
-    fun `returns 0 and does not publish when there are no rules`() {
-        val type = mockk<ResourceType>()
-        val request = request(type, mapOf("id" to "1"))
-        val fintResource = mockk<FintResource>()
-        every { relationCache.isTriggerResourceType(type) } returns true
-        every { resourceMapper.mapResource(type, request.resource) } returns fintResource
-        every { relationCache.rulesForTrigger(type) } returns emptyList()
+    fun `processRequest should process all valid rules and publish updates`() = runTest {
+        val event = createEvent()
+        val dummyResource = mockk<FintResource>()
 
-        val result = sut.processRequest(request)
-
-        assertEquals(0, result)
-        verify(exactly = 1) {
-            relationCache.isTriggerResourceType(type)
-            resourceMapper.mapResource(type, request.resource)
-            relationCache.rulesForTrigger(type)
-        }
-        verify(exactly = 0) { producer.publishRelationUpdate(any()) }
-    }
-
-    @Test
-    fun `publishes one update per non-null factory result and returns that count`() {
-        val type = mockk<ResourceType>()
-        val request = request(type, mapOf("id" to "1"))
-        val fintResource = mockk<FintResource>()
         val rule1 = mockk<RelationSyncRule>()
         val rule2 = mockk<RelationSyncRule>()
-        val rule3 = mockk<RelationSyncRule>()
-        val update1 = mockk<RelationUpdate>()
-        val update3 = mockk<RelationUpdate>()
+        val update1 = mockk<RelationUpdate>(relaxed = true) {
+            every { targetEntity.resourceName } returns "target1"
+        }
+        val update2 = mockk<RelationUpdate>(relaxed = true) {
+            every { targetEntity.resourceName } returns "target2"
+        }
 
-        every { relationCache.isTriggerResourceType(type) } returns true
-        every { resourceMapper.mapResource(type, request.resource) } returns fintResource
-        every { relationCache.rulesForTrigger(type) } returns listOf(rule1, rule2, rule3)
+        every { resourceConverter.convertToFintResource(any(), any()) } returns dummyResource
+        every { relationRuleRegistry.getRules(any()) } returns listOf(rule1, rule2)
 
-        mockkObject(RelationUpdate.Companion)
-        try {
-            every { RelationUpdate.from(request, fintResource, rule1) } returns update1
-            every { RelationUpdate.from(request, fintResource, rule2) } returns null
-            every { RelationUpdate.from(request, fintResource, rule3) } returns update3
-            every { producer.publishRelationUpdate(any()) } returns CompletableFuture.completedFuture(null)
+        every { rule1.toRelationUpdate(event, dummyResource) } returns update1
+        every { rule2.toRelationUpdate(event, dummyResource) } returns update2
 
-            val result = sut.processRequest(request)
+        every { relationUpdateProducer.publishRelationUpdate(any()) } returns
+                CompletableFuture.completedFuture(null)
 
-            assertEquals(2, result)
-            verify(exactly = 1) {
-                relationCache.isTriggerResourceType(type)
-                resourceMapper.mapResource(type, request.resource)
-                relationCache.rulesForTrigger(type)
-                RelationUpdate.from(request, fintResource, rule1)
-                RelationUpdate.from(request, fintResource, rule2)
-                RelationUpdate.from(request, fintResource, rule3)
-                producer.publishRelationUpdate(update1)
-                producer.publishRelationUpdate(update3)
-            }
-            verify(exactly = 0) { producer.publishRelationUpdate(match { it !== update1 && it !== update3 }) }
-        } finally {
-            unmockkObject(RelationUpdate.Companion)
+        val result = autoRelationService.processRequest(event)
+
+        assertEquals(2, result)
+
+        verify(exactly = 1) { relationUpdateProducer.publishRelationUpdate(update1) }
+        verify(exactly = 1) { relationUpdateProducer.publishRelationUpdate(update2) }
+        verify(exactly = 1) { metricService.incrementRelationSuccess("target1") }
+        verify(exactly = 1) { metricService.incrementRelationSuccess("target2") }
+    }
+
+    @Test
+    fun `processRequest should handle partial failure (one rule fails, one succeeds)`() = runTest {
+        val event = createEvent()
+        val dummyResource = mockk<FintResource>()
+
+        val validRule = mockk<RelationSyncRule>()
+        val invalidRule = mockk<RelationSyncRule>() // This one will throw exception
+
+        val validUpdate = mockk<RelationUpdate>(relaxed = true) {
+            every { targetEntity.resourceName } returns "validTarget"
+        }
+
+        every { resourceConverter.convertToFintResource(any(), any()) } returns dummyResource
+        every { relationRuleRegistry.getRules(any()) } returns listOf(validRule, invalidRule)
+
+        // Valid Rule -> Success
+        every { validRule.toRelationUpdate(event, dummyResource) } returns validUpdate
+
+        // Invalid Rule -> Throws Domain Exception (e.g. Mandatory Link Missing)
+        every { invalidRule.toRelationUpdate(event, dummyResource) } throws
+                MissingMandatoryLinkException("someLink")
+
+        every { relationUpdateProducer.publishRelationUpdate(any()) } returns
+                CompletableFuture.completedFuture(null)
+
+        val result = autoRelationService.processRequest(event)
+
+        assertEquals(1, result) // Only 1 succeeded
+
+        verify(exactly = 1) { relationUpdateProducer.publishRelationUpdate(validUpdate) }
+
+        verify {
+            metricService.incrementRelationFailure(
+                sourceId = "123",
+                resourceName = "elevfravar",
+                reason = MetricReason.MISSING_MANDATORY_LINK
+            )
         }
     }
 
-    private fun request(type: ResourceType, raw: Map<String, Any>): RelationRequest =
-        mockk<RelationRequest>().apply {
-            every { this@apply.type } returns type
-            every { this@apply.resource } returns raw
+    @Test
+    fun `processRequest should handle infrastructure (Kafka) failure`() = runTest {
+        val event = createEvent()
+        val dummyResource = mockk<FintResource>()
+        val rule = mockk<RelationSyncRule>()
+        val update = mockk<RelationUpdate>(relaxed = true)
+
+        every { resourceConverter.convertToFintResource(any(), any()) } returns dummyResource
+        every { relationRuleRegistry.getRules(any()) } returns listOf(rule)
+        every { rule.toRelationUpdate(event, dummyResource) } returns update
+
+        val failedFuture = CompletableFuture<SendResult<String, RelationUpdate>>()
+        failedFuture.completeExceptionally(RuntimeException("Kafka is down"))
+
+        every { relationUpdateProducer.publishRelationUpdate(update) } returns failedFuture
+
+        val result = autoRelationService.processRequest(event)
+
+        assertEquals(0, result)
+
+        verify(exactly = 1) { relationUpdateProducer.publishRelationUpdate(update) }
+
+        verify {
+            metricService.incrementRelationFailure(
+                sourceId = "123",
+                resourceName = "elevfravar",
+                reason = any()
+            )
         }
+    }
+
+    private fun createEvent() = mockk<RelationEvent> {
+        every { sourceEntity.resourceName } returns "elevfravar"
+        every { sourceData } returns "mockData"
+        every { sourceId } returns "123"
+    }
 }

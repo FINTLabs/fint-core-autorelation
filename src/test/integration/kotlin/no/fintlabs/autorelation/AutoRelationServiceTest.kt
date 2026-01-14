@@ -1,80 +1,116 @@
 package no.fintlabs.autorelation
 
-import no.fintlabs.autorelation.kafka.KafkaUtils
-import no.fintlabs.autorelation.kafka.RelationUpdateProducer
-import no.fintlabs.autorelation.kafka.producer.EntityProducer
-import org.awaitility.Awaitility.await
+import kotlinx.coroutines.test.runTest
+import no.fint.model.felles.kompleksedatatyper.Identifikator
+import no.fint.model.resource.FintResource
+import no.fint.model.resource.Link
+import no.fint.model.resource.utdanning.vurdering.ElevfravarResource
+import no.fintlabs.autorelation.model.EntityDescriptor
+import no.fintlabs.autorelation.model.RelationEvent
+import no.fintlabs.autorelation.model.RelationOperation
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.atLeastOnce
-import org.mockito.kotlin.never
-import org.mockito.kotlin.reset
-import org.mockito.kotlin.verify
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
+import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.test.context.EmbeddedKafka
-import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
-import java.util.concurrent.TimeUnit
+import kotlin.test.assertEquals
 
 @SpringBootTest
-@EmbeddedKafka(partitions = 1, controlledShutdown = true, count = 2)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@Suppress("SpringJavaInjectionPointsAutowiringInspection")
-class AutoRelationServiceTest @Autowired constructor(
-    private val kafkaUtils: KafkaUtils,
-    private val entityProducer: EntityProducer
-) {
+@EmbeddedKafka
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class AutoRelationServiceTest {
 
-    @MockitoSpyBean
+    @Autowired
     private lateinit var autoRelation: AutoRelationService
 
     @MockitoSpyBean
-    private lateinit var relationUpdateProducer: RelationUpdateProducer
-
-    private val topicResource = "fravarsregistrering"
+    private lateinit var metricService: MetricService
 
     @BeforeEach
-    fun resetSetup() {
-        kafkaUtils.resetTopics("fintlabs-no.fint-core.entity.utdanning-vurdering-$topicResource")
-        reset(autoRelation, relationUpdateProducer)
+    fun resetMocks() {
+        reset(metricService)
     }
 
-    @Test
-    fun `valid resources gets processed`() {
-        val resource = createFravarsregistreringResource(topicResource, "123")
+    @CsvSource(
+        "321, https://api.felleskomponent.no/utdanning/fravarsregistrering/systemid/123",
+        "123, fravarsregistrering/systemid/123",
+        "213, /systemid/123",
+        "213, systemid/123",
+    )
+    @ParameterizedTest(name = "successful event processed: {0}")
+    fun `successful event scenarios`(sourceId: String, href: String) = runTest {
+        val event = createElevfravarEvent(
+            sourceId = sourceId,
+            href = href
+        )
 
-        entityProducer.produceEntity(topicResource, resource, consumerProduced = false)
+        val publishedRelationUpdates = autoRelation.processRequest(event)
 
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted {
-            verify(autoRelation, atLeastOnce()).processRequest(any())
-            verify(relationUpdateProducer, atLeastOnce()).publishRelationUpdate(any())
-        }
+        assertEquals(1, publishedRelationUpdates)
+        verify(metricService, never()).incrementRelationFailure(any(), any(), any())
     }
 
-    @Test
-    fun `linkless resource gets skipped`() {
-        val resource = createFravarsregistreringResource(topicResource)
+    @CsvSource(
+        "systemid123", // only idValue, idField is required
+        "/84293",
+        "NULL",
+        "''",
+        nullValues = ["NULL"]
+    )
+    @ParameterizedTest(name = "required link that is invalid throws exception and increments metric: {0}")
+    fun `invalid link scenarios`(href: String?) = runTest {
+        val event = createElevfravarEvent(
+            sourceId = "123",
+            href = href
+        )
 
-        entityProducer.produceEntity(topicResource, resource, consumerProduced = false)
+        val publishedRelationUpdates = autoRelation.processRequest(event)
 
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted {
-            verify(autoRelation, atLeastOnce()).processRequest(any())
-            verify(relationUpdateProducer, never()).publishRelationUpdate(any())
-        }
+        assertEquals(0, publishedRelationUpdates)
+        verify(metricService, times(1)).incrementRelationFailure(
+            any(),
+            any(),
+            any()
+        )
     }
 
-    @Test
-    fun `non-controlled resource gets skipped`() {
-        val resource = createElevfravarResource(topicResource, elevforholdIds = arrayOf("1234"))
+    private fun createElevfravarEvent(
+        sourceId: String,
+        href: String?,
+        systemId: String = sourceId,
+    ) = createRelationEvent(
+        domainName = "utdanning",
+        packageName = "vurdering",
+        resourceName = "elevfravar",
+        sourceId = sourceId,
+        resource = ElevfravarResource().apply {
+            this.systemId = Identifikator().apply {
+                identifikatorverdi = systemId
+            }
+            addFravarsregistrering(Link.with(href))
+        },
+    )
 
-        entityProducer.produceEntity(topicResource, resource, consumerProduced = false)
-
-        await().atMost(10, TimeUnit.SECONDS).untilAsserted {
-            verify(autoRelation, atLeastOnce()).processRequest(any())
-            verify(relationUpdateProducer, never()).publishRelationUpdate(any())
-        }
-    }
-
+    private fun createRelationEvent(
+        domainName: String,
+        packageName: String,
+        resourceName: String,
+        resource: FintResource,
+        sourceId: String,
+        operation: RelationOperation = RelationOperation.ADD
+    ) = RelationEvent(
+        sourceEntity = EntityDescriptor(
+            domainName = domainName,
+            packageName = packageName,
+            resourceName = resourceName
+        ),
+        orgId = "fintlabs.no",
+        sourceData = resource,
+        sourceId = sourceId,
+        operation = operation
+    )
 }

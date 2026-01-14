@@ -22,8 +22,10 @@ class RelationUpdateProducerTest {
 
     @MockK
     lateinit var entityTopicService: EntityTopicService
+
     @MockK
     lateinit var entityProducerFactory: EntityProducerFactory
+
     @MockK
     lateinit var producer: EntityProducer<RelationUpdate>
 
@@ -65,7 +67,7 @@ class RelationUpdateProducerTest {
         val expectedKey = UUID.randomUUID().toString()
         val relationUpdate = mockk<RelationUpdate>()
 
-        every { relationUpdate.resource.id } returns expectedKey
+        every { relationUpdate.targetId } returns expectedKey
         every { producer.send(any()) } returns CompletableFuture.completedFuture(null)
 
         val sut = RelationUpdateProducer(entityTopicService, entityProducerFactory)

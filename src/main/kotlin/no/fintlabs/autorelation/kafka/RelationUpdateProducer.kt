@@ -5,8 +5,10 @@ import no.fintlabs.kafka.entity.EntityProducerFactory
 import no.fintlabs.kafka.entity.EntityProducerRecord
 import no.fintlabs.kafka.entity.topic.EntityTopicNameParameters
 import no.fintlabs.kafka.entity.topic.EntityTopicService
+import org.springframework.kafka.support.SendResult
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 @Component
 class RelationUpdateProducer(
@@ -29,11 +31,11 @@ class RelationUpdateProducer(
         entityTopicService.ensureTopic(entityTopic, Duration.ofDays(RETENTION_TIME_IN_DAYS).toMillis())
     }
 
-    fun publishRelationUpdate(relationUpdate: RelationUpdate) =
+    fun publishRelationUpdate(relationUpdate: RelationUpdate): CompletableFuture<SendResult<String, RelationUpdate>> =
         entityProducer.send(
             EntityProducerRecord.builder<RelationUpdate>()
                 .topicNameParameters(entityTopic)
-                .key(relationUpdate.resource.id)
+                .key(relationUpdate.targetId)
                 .value(relationUpdate)
                 .build()
         )

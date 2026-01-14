@@ -1,11 +1,12 @@
 package no.fintlabs.autorelation.kafka
 
+import kotlinx.coroutines.runBlocking
 import no.fintlabs.autorelation.AutoRelationService
 import no.fintlabs.autorelation.createFravarsregistreringResource
 import no.fintlabs.autorelation.kafka.producer.EntityProducer
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.*
+import org.mockito.kotlin.* // Imports verify, any, etc.
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer
@@ -22,7 +23,6 @@ import java.util.concurrent.TimeUnit
 )
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class EntityConsumerTest @Autowired constructor(
-    private val kafkaUtils: KafkaUtils,
     private val entityProducer: EntityProducer,
     private val entityConsumerContainer: ConcurrentMessageListenerContainer<String?, Any>
 ) {
@@ -54,9 +54,15 @@ class EntityConsumerTest @Autowired constructor(
         entityProducer.produceEntity(topicResource, createFravarsregistreringResource())
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted {
+            // Standard function verification
             verify(entityConsumer, atLeastOnce()).consumeRecord(any())
-            verify(autoRelation, atLeastOnce()).processRequest(any())
+
+            // Suspend function verification
+            runBlocking {
+                // With Mockito-Kotlin, you just use 'verify' inside runBlocking.
+                // It correctly handles the suspend function invocation.
+                verify(autoRelation, atLeastOnce()).processRequest(any())
+            }
         }
     }
-
 }

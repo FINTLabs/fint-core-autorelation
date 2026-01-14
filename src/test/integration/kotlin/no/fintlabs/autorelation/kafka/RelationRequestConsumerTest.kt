@@ -1,10 +1,11 @@
 package no.fintlabs.autorelation.kafka
 
+import kotlinx.coroutines.runBlocking // Add this import
 import no.fintlabs.autorelation.AutoRelationService
-import no.fintlabs.autorelation.kafka.producer.RelationRequestProducer
+import no.fintlabs.autorelation.kafka.producer.RelationEventProducer
+import no.fintlabs.autorelation.model.EntityDescriptor
+import no.fintlabs.autorelation.model.RelationEvent
 import no.fintlabs.autorelation.model.RelationOperation
-import no.fintlabs.autorelation.model.RelationRequest
-import no.fintlabs.autorelation.model.ResourceType
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,15 +23,15 @@ import java.util.concurrent.TimeUnit
 @SpringBootTest
 @EmbeddedKafka(partitions = 1, controlledShutdown = true, count = 2)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class RelationRequestConsumerTest @Autowired constructor(
-    private val relationRequestProducer: RelationRequestProducer
+class RelationEventConsumerTest @Autowired constructor(
+    private val relationRequestProducer: RelationEventProducer
 ) {
 
     @MockitoSpyBean
     private lateinit var autoRelationService: AutoRelationService
 
     @MockitoSpyBean
-    private lateinit var relationRequestConsumer: RelationRequestConsumer
+    private lateinit var relationRequestConsumer: RelationEventConsumer
 
     @BeforeEach
     fun setup() {
@@ -39,21 +40,27 @@ class RelationRequestConsumerTest @Autowired constructor(
 
     @Test
     fun `process message that matches topic`() {
-        val relationRequest = createRelationRequest()
+        val relationRequest = createRelationEvent()
 
         relationRequestProducer.produceEvent(relationRequest)
 
         await().atMost(10, TimeUnit.SECONDS).untilAsserted {
+            // 1. Standard function: Verify normally
             verify(relationRequestConsumer, times(1)).consumeRecord(any())
-            verify(autoRelationService, times(1)).processRequest(relationRequest)
+
+            // 2. Suspend function: Verify inside runBlocking
+            runBlocking {
+                verify(autoRelationService, times(1)).processRequest(relationRequest)
+            }
         }
     }
 
-    private fun createRelationRequest() =
-        RelationRequest(
-            type = ResourceType("utdanning", "vurdering", "elevfravar"),
+    private fun createRelationEvent() =
+        RelationEvent(
+            sourceEntity = EntityDescriptor("utdanning", "vurdering", "elevfravar"),
             orgId = "fintlabs.no",
-            resource = "anything",
+            sourceData = "anything",
+            sourceId = "123",
             operation = RelationOperation.DELETE
         )
 
