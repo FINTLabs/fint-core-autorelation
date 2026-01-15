@@ -37,7 +37,7 @@ dependencies {
     implementation("no.fintlabs:fint-kafka:3.2.0-rc-3")
     implementation("org.springframework.kafka:spring-kafka")
     implementation("no.novari:fint-core-metamodel:4.0.0-rc-1")
-    implementation("no.fintlabs:fint-core-autorelation-lib:6.0.0-rc-2")
+    implementation("no.fintlabs:fint-core-autorelation-lib:6.0.0")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("io.micrometer:micrometer-registry-prometheus")
